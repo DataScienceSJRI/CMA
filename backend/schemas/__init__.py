@@ -7,7 +7,8 @@ from .common import (
     PaymentStatus,
     ConsultationStatus,
     MessageResponse,
-    TokenResponse
+    TokenResponse,
+    PaginatedResponse,
 )
 
 # User schemas
@@ -23,6 +24,8 @@ from .consultation import (
     ConsultationBase,
     ConsultationCreate,
     ConsultationUpdate,
+    ConsultationPublicCreate,
+    ConsultationAssign,
     ConsultationResponse,
     ConsultationDetailResponse,
     ConsultationTrackingCreate,
@@ -37,13 +40,20 @@ from .member import (
 )
 
 # Auth schemas
-from .auth import LoginRequest
+from .auth import LoginRequest, RegisterRequest, RefreshRequest
 
 # Report schemas
 from .report import (
     ReportSummary,
-    MonthlyReportQuery
+    MonthlyReportQuery,
+    MemberStats,
+    FacultyStats,
+    DeptStats,
+    HierarchicalReport,
 )
+
+# Invoice schemas
+from .invoice import InvoiceSend, InvoiceResponse
 
 __all__ = [
     # Common
@@ -52,6 +62,7 @@ __all__ = [
     "ConsultationStatus",
     "MessageResponse",
     "TokenResponse",
+    "PaginatedResponse",
     # Users
     "UserBase",
     "UserCreate",
@@ -61,6 +72,8 @@ __all__ = [
     "ConsultationBase",
     "ConsultationCreate",
     "ConsultationUpdate",
+    "ConsultationPublicCreate",
+    "ConsultationAssign",
     "ConsultationResponse",
     "ConsultationDetailResponse",
     "ConsultationTrackingCreate",
@@ -71,7 +84,16 @@ __all__ = [
     "MemberManagedDetailResponse",
     # Auth
     "LoginRequest",
+    "RegisterRequest",
+    "RefreshRequest",
     # Reports
     "ReportSummary",
-    "MonthlyReportQuery"
+    "MonthlyReportQuery",
+    "MemberStats",
+    "FacultyStats",
+    "DeptStats",
+    "HierarchicalReport",
+    # Invoices
+    "InvoiceSend",
+    "InvoiceResponse",
 ]

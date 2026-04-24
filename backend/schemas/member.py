@@ -6,7 +6,7 @@ from uuid import UUID
 # Member Management Schemas
 class MemberManagedCreate(BaseModel):
     managed_member_user_id: UUID
-    member_type: str
+    member_type: Optional[str] = None
 
 class MemberManagedResponse(MemberManagedCreate):
     managed_id: UUID
@@ -22,3 +22,4 @@ class MemberManagedDetailResponse(MemberManagedResponse):
     manager_role: Optional[str] = None
     member_username: Optional[str] = None
     member_role: Optional[str] = None
+    member_department: Optional[str] = None

@@ -4,14 +4,60 @@ Consultation Management System - FastAPI Backend
 Main application entry point with CORS configuration and router registration.
 """
 
+import os
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.middleware.base import BaseHTTPMiddleware
+from slowapi.errors import RateLimitExceeded
+from slowapi import _rate_limit_exceeded_handler
 import uvicorn
 
-from routers import auth, consultations
+from routers import auth, consultations, users, public, invoices
+from utils.limiter import limiter
+
+logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# LIFESPAN — startup and shutdown events
+# ============================================================================
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage application startup and shutdown."""
+    from utils.supabase_client import SUPABASE_URL, SUPABASE_JWT_SECRET, supabase
+    _env = os.getenv("ENVIRONMENT", "production").lower()
+
+    if SUPABASE_URL:
+        logger.info("CMA API starting. Supabase: %s", SUPABASE_URL)
+    else:
+        logger.warning("CMA API starting — Supabase credentials not configured. Check backend/.env")
+
+    if not SUPABASE_JWT_SECRET and _env != "development":
+        logger.warning(
+            "SUPABASE_JWT_SECRET not set — auth falls back to Supabase API (~50 ms per request). "
+            "Set it from Supabase Dashboard → Settings → API → JWT Secret for production performance."
+        )
+
+    # Warn loudly if SMTP is not configured — invoice emails will fail silently otherwise.
+    _smtp_user = os.getenv("SMTP_USERNAME", "")
+    _smtp_pass = os.getenv("SMTP_PASSWORD", "")
+    if not _smtp_user or not _smtp_pass or _smtp_user.startswith("your-"):
+        logger.warning(
+            "SMTP credentials not configured (SMTP_USERNAME / SMTP_PASSWORD). "
+            "Invoice email delivery will fail until these are set in .env"
+        )
+
+    logger.info("API documentation available at /docs")
+    yield
+    logger.info("CMA API shutting down.")
+
 
 # ============================================================================
 # APPLICATION CONFIGURATION
@@ -22,8 +68,68 @@ app = FastAPI(
     description="Backend API for managing consultations, users, and reporting",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan,
 )
+
+# Rate limiting
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+# ============================================================================
+# SECURITY HEADERS MIDDLEWARE
+# ============================================================================
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Add security-related HTTP response headers to every response."""
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        # Prevent this app from being embedded in an iframe (clickjacking)
+        response.headers["X-Frame-Options"] = "DENY"
+        # Prevent MIME-type sniffing
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        # Restrict referrer info to same origin
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        # Basic Content-Security-Policy for API responses
+        response.headers["Content-Security-Policy"] = "default-src 'none'"
+        # Only send HSTS in production (breaks local dev if sent over HTTP)
+        if os.getenv("ENVIRONMENT", "production").lower() != "development":
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=31536000; includeSubDomains"
+            )
+        return response
+
+
+# ============================================================================
+# REQUEST SIZE LIMIT MIDDLEWARE
+# ============================================================================
+
+_MAX_REQUEST_BODY_BYTES = int(os.getenv("MAX_REQUEST_BODY_BYTES", str(1 * 1024 * 1024)))  # 1 MB
+
+
+class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
+    """Reject requests whose Content-Length exceeds the configured limit.
+
+    Protects against trivially large payloads that would exhaust memory before
+    Pydantic validation even runs.
+    """
+
+    async def dispatch(self, request: Request, call_next):
+        content_length = request.headers.get("content-length")
+        if content_length and int(content_length) > _MAX_REQUEST_BODY_BYTES:
+            return JSONResponse(
+                status_code=413,
+                content={"error": "Payload Too Large", "message": "Request body exceeds the allowed size limit."},
+            )
+        return await call_next(request)
+
+
+# Register middleware (last-added = outermost = first to run)
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RequestSizeLimitMiddleware)
+
 
 # ============================================================================
 # CORS MIDDLEWARE
@@ -31,21 +137,30 @@ app = FastAPI(
 # Configure CORS for frontend communication
 # Update origins list for production deployment
 
-origins = [
-    "http://localhost:3000",  # React development server
-    "http://localhost:5173",  # Vite development server
-    "http://localhost:8080",  # Alternative frontend port
-    # Add your production frontend URL here
-    # "https://your-production-domain.com"
-]
+# Read allowed origins from environment variable (comma-separated list).
+# In production, ALLOWED_ORIGINS MUST be set to your exact frontend URL, e.g.:
+#   ALLOWED_ORIGINS=https://cma.yourdomain.com
+# The app hard-fails at startup in non-development environments if it is missing.
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "").strip()
+if not _raw_origins:
+    _env = os.getenv("ENVIRONMENT", "production").lower()
+    if _env != "development":
+        raise RuntimeError(
+            "ALLOWED_ORIGINS must be set in production. "
+            "Set it to your frontend URL, e.g.: ALLOWED_ORIGINS=https://cma.yourdomain.com"
+        )
+    _raw_origins = "http://localhost:3000,http://localhost:5173"
+    logger.warning("ALLOWED_ORIGINS not set — defaulting to localhost (development only)")
+origins = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # In production, specify exact origins
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods (GET, POST, PUT, DELETE, etc.)
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
+
 
 # ============================================================================
 # EXCEPTION HANDLERS
@@ -80,12 +195,12 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
     """Handle unexpected exceptions."""
+    logger.exception("Unhandled exception on %s %s", request.method, request.url.path)
     return JSONResponse(
         status_code=500,
         content={
             "error": "Internal Server Error",
-            "message": "An unexpected error occurred",
-            "detail": str(exc) if app.debug else None
+            "message": "An unexpected error occurred. Please try again or contact support.",
         }
     )
 
@@ -94,11 +209,12 @@ async def general_exception_handler(request: Request, exc: Exception):
 # ROUTER REGISTRATION
 # ============================================================================
 
-# Register authentication routes
 app.include_router(auth.router)
-
-# Register consultation management routes
 app.include_router(consultations.router)
+app.include_router(users.router)
+app.include_router(public.router)
+app.include_router(invoices.router)
+
 
 # ============================================================================
 # ROOT ENDPOINTS
@@ -112,56 +228,36 @@ async def root():
         "version": "1.0.0",
         "status": "running",
         "documentation": "/docs",
-        "endpoints": {
-            "authentication": "/auth",
-            "consultations": "/consultations"
-        }
     }
 
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint for monitoring."""
-    return {
-        "status": "healthy",
-        "message": "API is running successfully"
-    }
+    """Health check endpoint for monitoring.
 
+    Probes the Supabase connection so that load balancers / orchestrators only
+    route traffic to instances that can actually reach the database.
+    """
+    from utils.supabase_client import supabase, execute_query
+    import asyncio
 
-# ============================================================================
-# STARTUP AND SHUTDOWN EVENTS
-# ============================================================================
+    try:
+        await asyncio.wait_for(
+            execute_query(supabase.table("users").select("user_id").limit(1)),
+            timeout=3.0,
+        )
+        db_status = "ok"
+    except Exception as e:
+        logger.warning("Health check DB probe failed: %s", e)
+        db_status = "unreachable"
 
-@app.on_event("startup")
-async def startup_event():
-    """Execute tasks on application startup."""
-    print("🚀 Consultation Management System API starting...")
-    print("📚 API Documentation available at: http://localhost:8000/docs")
-    print("🔒 Mock authentication active (replace with Supabase in production)")
-    
-    # TODO: Initialize Supabase client here
-    # Example:
-    # from supabase import create_client
-    # import os
-    # 
-    # supabase_url = os.getenv("SUPABASE_URL")
-    # supabase_key = os.getenv("SUPABASE_KEY")
-    # 
-    # if not supabase_url or not supabase_key:
-    #     print("⚠️  Warning: Supabase credentials not configured")
-    # else:
-    #     global supabase
-    #     supabase = create_client(supabase_url, supabase_key)
-    #     print("✅ Supabase client initialized")
+    if db_status != "ok":
+        return JSONResponse(
+            status_code=503,
+            content={"status": "degraded", "database": db_status},
+        )
 
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Execute tasks on application shutdown."""
-    print("👋 Consultation Management System API shutting down...")
-    
-    # TODO: Cleanup resources if needed
-    # Example: Close database connections, cleanup temp files, etc.
+    return {"status": "healthy", "database": db_status}
 
 
 # ============================================================================
@@ -169,53 +265,11 @@ async def shutdown_event():
 # ============================================================================
 
 if __name__ == "__main__":
-    """
-    Run the FastAPI application with uvicorn server.
-    
-    For development:
-        python main.py
-    
-    For production:
-        uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
-    """
+    is_dev = os.getenv("ENVIRONMENT", "production").lower() == "development"
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8000,
-        reload=True,  # Enable auto-reload for development
-        log_level="info"
+        port=int(os.getenv("PORT", "8000")),
+        reload=is_dev,
+        log_level=os.getenv("LOG_LEVEL", "info"),
     )
-
-
-# ============================================================================
-# CONFIGURATION NOTES
-# ============================================================================
-"""
-Environment Variables (create a .env file):
--------------------------------------------
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-
-DATABASE_URL=postgresql://user:password@host:port/database
-SECRET_KEY=your_secret_key_for_jwt
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-
-CORS_ORIGINS=http://localhost:3000,http://localhost:5173
-
-DEBUG=True  # Set to False in production
-
-Production Deployment:
----------------------
-1. Set DEBUG=False
-2. Configure specific CORS origins (remove wildcards)
-3. Use environment variables for all sensitive configuration
-4. Enable HTTPS
-5. Configure proper logging
-6. Set up monitoring and error tracking
-7. Use a production-grade ASGI server (uvicorn with workers or gunicorn)
-
-Example production command:
-gunicorn main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
-"""
