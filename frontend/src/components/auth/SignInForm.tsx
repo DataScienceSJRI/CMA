@@ -75,7 +75,7 @@ export default function SignInForm() {
           </svg>
         </div>
         <h1 className="text-xl font-bold tracking-tight text-gray-800 dark:text-white/90 sm:text-2xl">
-          SJRI Consult
+          SJRI Consultations
         </h1>
         <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400">
           Department of Biostatistics 
