@@ -47,46 +47,11 @@ export default function AuthLayout({
           </div>
         </div>
 
-        {/* ── MIDDLE: What this system does ── */}
-        <div className="relative z-10 space-y-3">
-          <p className="text-xs font-semibold tracking-[0.12em] text-brand-500 uppercase mb-5">
-            What you can do here
+        {/* ── MIDDLE: Tagline ── */}
+        <div className="relative z-10">
+          <p className="text-base text-brand-200/60 leading-relaxed max-w-xs">
+            Centralised portal for managing consultations, team assignments, and reporting across the department.
           </p>
-
-          {([
-            {
-              icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
-              title: "Record consultations",
-              desc: "Add new entries, update progress, and keep client details in one place.",
-            },
-            {
-              icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z",
-              title: "Manage your team",
-              desc: "Assign work to members, track who is handling what, and view activity.",
-            },
-            {
-              icon: "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
-              title: "Generate reports",
-              desc: "Get monthly or custom date-range summaries for your department.",
-            },
-            {
-              icon: "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z",
-              title: "Send invoices",
-              desc: "Create and email SJRI-format invoices directly from a consultation.",
-            },
-          ] as { icon: string; title: string; desc: string }[]).map(({ icon, title, desc }) => (
-            <div key={title} className="flex items-start gap-3.5 py-3 border-b border-white/[0.06] last:border-0">
-              <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-500/15">
-                <svg className="h-3.5 w-3.5 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={icon} />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-white/90 leading-none mb-1">{title}</p>
-                <p className="text-xs text-brand-200/50 leading-relaxed">{desc}</p>
-              </div>
-            </div>
-          ))}
         </div>
 
         {/* ── BOTTOM: Footer ── */}
