@@ -105,6 +105,7 @@ export const authAPI = {
 
   register: async (userData: {
     username: string;
+    password?: string;
     role: string;
     department?: string;
   }): Promise<{ message: string }> => {

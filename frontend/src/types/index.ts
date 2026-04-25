@@ -83,11 +83,12 @@ export interface ConsultationFormData {
   department: string;
   reason: string;
   description: string;
-  time_spent: number;
+  time_spent: number | string;
   project_from: string;
   progress?: string;
   payment_status?: string;
   report_submission_date?: string;
+  amount?: number | string;
   status?: string;
   assigned_to_user_id?: string; // HOD/Faculty: assign to a managed member
 }
