@@ -18,9 +18,19 @@ import ConsultForm from "./pages/Public/ConsultForm";
 import CreateUser from "./pages/Admin/CreateUser";
 import UserProfiles from "./pages/UserProfiles";
 
+function InviteRedirect() {
+  const hash = window.location.hash;
+  if (hash.includes("type=invite") || hash.includes("type=recovery")) {
+    window.location.replace("/set-password" + hash);
+    return null;
+  }
+  return null;
+}
+
 export default function App() {
   return (
     <Router>
+      <InviteRedirect />
       <ScrollToTop />
       <Routes>
         {/* Protected CMA routes */}
