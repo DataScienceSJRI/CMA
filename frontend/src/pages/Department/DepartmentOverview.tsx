@@ -28,6 +28,7 @@ export default function DepartmentOverview() {
 
   const [faculties, setFaculties] = useState<FacultyUser[]>([]);
   const [myTeam, setMyTeam] = useState<ManagedMember[]>([]);
+  const [hodTeam, setHodTeam] = useState<ManagedMember[]>([]);
   const [loading, setLoading] = useState(true);
 
   // ── Add Faculty modal ─────────────────────────────────────────────────────
@@ -51,13 +52,17 @@ export default function DepartmentOverview() {
     if (!department) return;
     setLoading(true);
     if (userIsHOD) {
-      userAPI
-        .getFacultyByDepartment(department)
-        .then(setFaculties)
-        .catch((err) => console.error("Failed to load faculties:", err))
+      Promise.all([
+        userAPI.getFacultyByDepartment(department),
+        userAPI.getFacultyManagedMembers(user!.user_id),
+      ])
+        .then(([fetchedFaculties, fetchedHodTeam]) => {
+          setFaculties(fetchedFaculties);
+          setHodTeam(fetchedHodTeam);
+        })
+        .catch((err) => console.error("Failed to load department data:", err))
         .finally(() => setLoading(false));
     } else {
-      // Faculty: load only their own managed team members
       userAPI
         .getFacultyManagedMembers(user!.user_id)
         .then(setMyTeam)
@@ -306,6 +311,64 @@ export default function DepartmentOverview() {
             )}
           </div>
         </div>
+
+        {/* ── HOD's direct team ─────────────────────────────────────────── */}
+        {userIsHOD && (
+          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 dark:border-gray-800">
+              <div>
+                <h3 className="text-base font-medium text-gray-800 dark:text-white/90">My Direct Team</h3>
+                <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">Members managed directly by you</p>
+              </div>
+              <Button size="sm" onClick={() => setTargetFaculty(user as FacultyUser)}>
+                + Add Member
+              </Button>
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-gray-100 dark:border-gray-800">
+                    <TableCell isHeader className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Member</TableCell>
+                    <TableCell isHeader className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Role</TableCell>
+                    <TableCell isHeader className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Actions</TableCell>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {hodTeam.map((member) => (
+                    <TableRow key={member.managed_id} className="border-b border-gray-100 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-white/[0.02]">
+                      <TableCell className="whitespace-nowrap px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-500 text-sm font-bold text-white">
+                            {(member.member_username || "U").charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">{member.member_username || "Unknown"}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap px-6 py-4">
+                        <Badge size="sm" color="light">{member.member_role || "Member"}</Badge>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap px-6 py-4 text-right">
+                        <button
+                          onClick={() => navigate(`/member/${member.managed_member_user_id}`)}
+                          className="text-sm font-medium text-brand-500 hover:text-brand-600 dark:text-brand-400"
+                        >
+                          View Consultations →
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {hodTeam.length === 0 && (
+                    <TableRow>
+                      <TableCell className="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+                        No direct team members yet.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Add Faculty Modal ─────────────────────────────────────────────── */}

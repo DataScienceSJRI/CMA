@@ -6,7 +6,7 @@ import ConsultationBarChart from "../../components/cma/ConsultationBarChart";
 import ConsultationTable from "../../components/cma/ConsultationTable";
 import InvoiceModal from "../../components/cma/InvoiceModal";
 import Button from "../../components/ui/button/Button";
-import { consultationAPI } from "../../services/api";
+import { consultationAPI, userAPI } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import type { Consultation } from "../../types";
 
@@ -19,9 +19,15 @@ export default function MemberActivity() {
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
   const [invoiceTarget, setInvoiceTarget] = useState<Consultation | null>(null);
+  const [memberUsername, setMemberUsername] = useState<string>("");
 
   useEffect(() => {
-    if (memberId) loadMemberConsultations();
+    if (memberId) {
+      loadMemberConsultations();
+      userAPI.getUserProfile(memberId)
+        .then((profile) => setMemberUsername(profile.username))
+        .catch(() => {});
+    }
   }, [memberId]);
 
   const loadMemberConsultations = async () => {
@@ -53,9 +59,7 @@ export default function MemberActivity() {
   const months = Object.keys(monthlyMap);
   const counts = Object.values(monthlyMap);
 
-  // Get member name from first consultation if available
-  const memberName =
-    consultations[0]?.responsible_username || `Member ${memberId}`;
+  const memberName = memberUsername || consultations[0]?.responsible_username || "Member";
 
   return (
     <>

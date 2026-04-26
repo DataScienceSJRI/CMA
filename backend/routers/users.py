@@ -134,6 +134,29 @@ async def search_users(
 
 
 # ============================================================================
+# GET A SINGLE USER BY ID
+# ============================================================================
+
+@router.get("/{user_id}/profile", response_model=Dict)
+@limiter.limit("60/minute")
+async def get_user_profile(
+    request: Request,
+    user_id: UUID,
+    current_user: Dict = Depends(is_hod_or_faculty)
+):
+    """Get basic profile info for a user by ID. HOD and Faculty only."""
+    result = await execute_query(
+        supabase.table("users")
+        .select("user_id, username, role, department, is_active")
+        .eq("user_id", str(user_id))
+        .limit(1)
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="User not found.")
+    return result.data[0]
+
+
+# ============================================================================
 # GET MEMBERS MANAGED BY A SPECIFIC FACULTY (HOD only)
 # ============================================================================
 

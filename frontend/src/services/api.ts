@@ -306,6 +306,11 @@ export const userAPI = {
     const response = await api.post(`/users/${facultyId}/managed-members`, data);
     return response.data;
   },
+
+  getUserProfile: async (userId: string): Promise<FacultyUser> => {
+    const response = await api.get(`/users/${userId}/profile`);
+    return response.data;
+  },
 };
 
 // ========================================
