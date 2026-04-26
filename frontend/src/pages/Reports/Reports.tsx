@@ -106,6 +106,24 @@ function downloadPDF(report: HierarchicalReport, isHOD: boolean, hodUsername: st
   y = doc.lastAutoTable.finalY + 6;
 
   if (isHOD) {
+    // HOD direct team
+    const directMembers = report.hod_direct_members ?? [];
+    if (directMembers.length > 0) {
+      addSection("My Direct Team");
+      autoTable(doc, {
+        startY: y,
+        head: [["#", "Member", "Completed", "In Progress", "Total"]],
+        body: directMembers.map((m, i) => [i + 1, m.username, m.completed, m.in_progress, m.total]),
+        margin: { left: M, right: M },
+        headStyles: { fillColor: BRAND_RGB, textColor: 255, fontStyle: "bold", fontSize: 9 },
+        styles: { fontSize: 9, cellPadding: 3 },
+        alternateRowStyles: { fillColor: LIGHT_RGB },
+        columnStyles: { 0: { cellWidth: 10 } },
+        theme: "grid",
+      });
+      y = doc.lastAutoTable.finalY + 6;
+    }
+
     // Faculty summary table
     const faculties = (report.departments ?? []).flatMap((d) => d.faculties);
     addSection("Faculty Summary");
@@ -264,6 +282,8 @@ function HODReportView({ report, username }: { report: HierarchicalReport; usern
   const faculties = (report.departments ?? []).flatMap((d) => d.faculties);
   const max = faculties.reduce((m, f) => Math.max(m, f.grand_total), 0);
   const hodOwn = report.hod_own_total ?? 0;
+  const directMembers = report.hod_direct_members ?? [];
+  const directMax = directMembers.reduce((m, dm) => Math.max(m, dm.total), 0);
 
   return (
     <div className="space-y-5">
@@ -289,6 +309,35 @@ function HODReportView({ report, username }: { report: HierarchicalReport; usern
           <div>
             <p className="text-xs text-gray-500 dark:text-gray-400">My consultations ({username})</p>
             <p className="text-xl font-bold text-gray-800 dark:text-white/90">{hodOwn}</p>
+          </div>
+        </div>
+      )}
+
+      {/* HOD's direct team members */}
+      {directMembers.length > 0 && (
+        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5 dark:border-gray-800 dark:bg-white/[0.02]">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-base font-semibold text-gray-800 dark:text-white/90">My Direct Team</h3>
+            <span className="text-sm text-gray-400">{directMembers.length} member{directMembers.length !== 1 ? "s" : ""}</span>
+          </div>
+          <div className="divide-y divide-gray-100 dark:divide-gray-700/40">
+            {directMembers.map((m, i) => (
+              <div key={m.user_id} className="flex items-center gap-4 py-3">
+                <span className="w-4 shrink-0 text-center text-xs font-semibold text-gray-400">{i + 1}</span>
+                <Av name={m.username} size="sm" color="purple" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <span className="truncate text-sm font-medium text-gray-700 dark:text-gray-300">{m.username}</span>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {m.completed > 0 && <Chip color="bg-success-50 text-success-700 dark:bg-success-500/10 dark:text-success-400">{m.completed} done</Chip>}
+                      {m.in_progress > 0 && <Chip color="bg-warning-50 text-warning-700 dark:bg-warning-500/10 dark:text-warning-400">{m.in_progress} active</Chip>}
+                      <span className="w-6 text-right text-sm font-bold text-gray-800 dark:text-white/80">{m.total}</span>
+                    </div>
+                  </div>
+                  <Bar value={m.total} max={directMax || 1} color="bg-purple-400" />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

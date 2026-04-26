@@ -898,6 +898,37 @@ async def get_hierarchical_report(
         hod_c = counts.get(user_id, {})
         hod_own = hod_c.get("total", 0)
 
+        # HOD's direct managed members (not through any Faculty)
+        hod_mm_resp = await execute_query(
+            supabase.table("members_managed")
+            .select("managed_member_user_id")
+            .eq("manager_id", user_id)
+        )
+        hod_direct_member_ids = [r["managed_member_user_id"] for r in hod_mm_resp.data]
+
+        hod_direct_members_list: list = []
+        if hod_direct_member_ids:
+            hod_member_info_resp = await execute_query(
+                supabase.table("users")
+                .select("user_id, username")
+                .in_("user_id", hod_direct_member_ids)
+            )
+            hod_member_info = {r["user_id"]: r["username"] for r in hod_member_info_resp.data}
+            for mid in hod_direct_member_ids:
+                mc = counts.get(mid, {})
+                hod_direct_members_list.append(MemberStats(
+                    user_id=mid,
+                    username=hod_member_info.get(mid, mid),
+                    total=mc.get("total", 0),
+                    completed=mc.get("completed", 0),
+                    in_progress=mc.get("in_progress", 0),
+                ))
+            # Include direct members' consultations in overall totals
+            for ms in hod_direct_members_list:
+                overall_total += ms.total
+                overall_completed += ms.completed
+                overall_in_progress += ms.in_progress
+
         return HierarchicalReport(
             date_from=d_from.isoformat(),
             date_to=d_to.isoformat(),
@@ -906,6 +937,7 @@ async def get_hierarchical_report(
             in_progress=overall_in_progress,
             departments=sorted(dept_stats_list, key=lambda x: x.total, reverse=True),
             hod_own_total=hod_own,
+            hod_direct_members=hod_direct_members_list if hod_direct_members_list else None,
         )
 
     # ── FACULTY PATH ──────────────────────────────────────────────────────────

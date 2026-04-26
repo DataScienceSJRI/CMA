@@ -188,6 +188,7 @@ export interface HierarchicalReport {
   // HOD view
   departments?: DeptStats[];
   hod_own_total?: number;
+  hod_direct_members?: MemberStats[];
   // Faculty view
   own_total?: number;
   member_total?: number;

@@ -56,6 +56,7 @@ class HierarchicalReport(BaseModel):
     # HOD view: broken down by department → faculty → members
     departments: Optional[List[DeptStats]] = None
     hod_own_total: Optional[int] = None   # HOD's own consultations (if any)
+    hod_direct_members: Optional[List[MemberStats]] = None  # members managed directly by HOD
     # Faculty view: own stats + per-member breakdown
     own_total: Optional[int] = None
     member_total: Optional[int] = None
