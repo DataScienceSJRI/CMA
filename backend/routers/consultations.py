@@ -923,11 +923,6 @@ async def get_hierarchical_report(
                     completed=mc.get("completed", 0),
                     in_progress=mc.get("in_progress", 0),
                 ))
-            # Include direct members' consultations in overall totals
-            for ms in hod_direct_members_list:
-                overall_total += ms.total
-                overall_completed += ms.completed
-                overall_in_progress += ms.in_progress
 
         return HierarchicalReport(
             date_from=d_from.isoformat(),
