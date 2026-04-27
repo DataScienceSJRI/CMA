@@ -61,7 +61,7 @@ def main():
             continue
 
         try:
-            client.auth.admin.update_user_by_id(uid, {"password": args.password})
+            client.auth.admin.update_user_by_id(uid, {"password": args.password, "email_confirm": True})
             print(f"  OK   {email:<45}  ({role})")
             ok += 1
         except Exception as e:
