@@ -72,3 +72,7 @@ def main():
         print(f"\nDone: {ok} updated, {fail} failed.")
         if ok:
             print(f"Users can now log in with password: {args.password!r}")
+
+
+if __name__ == "__main__":
+    main()
