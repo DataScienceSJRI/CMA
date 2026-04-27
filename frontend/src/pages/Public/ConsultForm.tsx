@@ -6,11 +6,78 @@ import Button from "../../components/ui/button/Button";
 import { publicAPI } from "../../services/api";
 import type { PublicUserResult } from "../../types";
 
-const EXTRA_DEPARTMENTS = ["Nutrition", "Medical Informatics", "Health and Humanities"];
-
-// All biostatistics staff belong to this department — always search here
-// regardless of the client's own department.
 const STAFF_DEPARTMENT = "Biostatistics";
+
+const DEPARTMENT_GROUPS = [
+  {
+    institution: "SJMC",
+    categories: [
+      {
+        label: "Preclinical Departments",
+        departments: ["Anatomy", "Biochemistry", "Physiology"],
+      },
+      {
+        label: "Paraclinical Departments",
+        departments: ["Community Medicine", "Forensic Medicine", "Microbiology", "Pathology", "Pharmacology"],
+      },
+      {
+        label: "Clinical Departments",
+        departments: [
+          "Anesthesiology", "Dental Surgery", "Dermatology", "Emergency Medicine",
+          "Family Medicine", "General Medicine", "General Surgery",
+          "Obstetrics & Gynaecology", "Ophthalmology", "Orthopaedics",
+          "Otolaryngology (ENT)", "Paediatrics",
+          "Physical Medicine & Rehabilitation (PMR)", "Psychiatry",
+          "Radiology (Radiodiagnosis)", "Transfusion Medicine and Immunohematology",
+        ],
+      },
+      {
+        label: "Superspeciality Departments",
+        departments: [
+          "Cardiology", "Cardiothoracic and Vascular Surgery",
+          "Clinical Immunology and Rheumatology", "Clinical Hematology",
+          "Critical Care Medicine", "Endocrinology", "Gastroenterology",
+          "Gynaecological Oncology", "Medical Oncology", "Neonatology",
+          "Nephrology", "Neurology", "Neurosurgery",
+          "Pain, Palliative Medicine and Supportive Care", "Pediatric Intensive Care",
+          "Paediatric Nephrology", "Paediatric Surgery",
+          "Pediatric Hematology and Oncology", "Plastic Surgery",
+          "Pulmonary Medicine", "Radiation Oncology (Radiotherapy)",
+          "Surgical Oncology", "Urology",
+        ],
+      },
+      {
+        label: "Ancillary Departments",
+        departments: [
+          "Biostatistics", "History of Medicine", "Medical Education",
+          "Medical Ethics", "Students Portal",
+        ],
+      },
+    ],
+  },
+  {
+    institution: "SJRI",
+    categories: [
+      {
+        label: "Divisions",
+        departments: [
+          "Clinical Research and Training",
+          "Epidemiology, Biostatistics and Population Health",
+          "Health and Humanities", "Infectious Diseases",
+          "Medical Informatics", "Mental Health and Neurosciences",
+          "Molecular Medicine", "Nutrition",
+        ],
+      },
+    ],
+  },
+];
+
+// Flat list for searching across all departments
+const ALL_DEPARTMENTS: { dept: string; group: string }[] = DEPARTMENT_GROUPS.flatMap((inst) =>
+  inst.categories.flatMap((cat) =>
+    cat.departments.map((d) => ({ dept: d, group: `${inst.institution} — ${cat.label}` }))
+  )
+);
 
 const idTypeOptions = [
   { value: "Student ID", label: "Student ID" },
@@ -39,7 +106,6 @@ const reasonOptions = [
 ];
 
 export default function ConsultForm() {
-  const [departments, setDepartments] = useState<string[]>([]);
   const [form, setForm] = useState({
     g_name: "",
     profession: "",
@@ -53,6 +119,8 @@ export default function ConsultForm() {
   const [professionOther, setProfessionOther] = useState("");
   const [reasonOther, setReasonOther] = useState("");
   const [departmentOther, setDepartmentOther] = useState("");
+  const [deptSearch, setDeptSearch] = useState("");
+  const [deptOpen, setDeptOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<PublicUserResult | null>(null);
   const [userSearch, setUserSearch] = useState("");
   const [userResults, setUserResults] = useState<PublicUserResult[]>([]);
@@ -61,16 +129,6 @@ export default function ConsultForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
-
-  // Load departments on mount, merge with extras, append "Others"
-  useEffect(() => {
-    publicAPI.getDepartments().then((fetched) => {
-      const merged = Array.from(new Set([...fetched, ...EXTRA_DEPARTMENTS]));
-      setDepartments([...merged, "Others"]);
-    }).catch(() => {
-      setDepartments([...EXTRA_DEPARTMENTS, "Others"]);
-    });
-  }, []);
 
   // Debounced user search — always searches within STAFF_DEPARTMENT (Biostatistics),
   // independent of the client's own department.
@@ -256,7 +314,7 @@ export default function ConsultForm() {
 
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
               {/* Profession */}
-              <div>
+              <div className="sm:col-span-1">
                 <Label>
                   Profession <span className="text-error-500">*</span>
                 </Label>
@@ -280,32 +338,102 @@ export default function ConsultForm() {
                 )}
               </div>
 
-              {/* Department */}
-              <div>
+              {/* Department — searchable typeahead */}
+              <div className="sm:col-span-2">
                 <Label>
                   Department <span className="text-error-500">*</span>
                 </Label>
-                <Select
-                  options={departments.map((d) => ({ value: d, label: d }))}
-                  placeholder="Select department"
-                  defaultValue={form.department}
-                  onChange={(v) => {
-                    setForm((p) => ({ ...p, department: v }));
-                    if (v !== "Others") setDepartmentOther("");
-                    // Reset user search when department changes
-                    setSelectedUser(null);
-                    setUserSearch("");
-                    setUserResults([]);
-                  }}
-                />
+                {form.department && form.department !== "Others" ? (
+                  <div className="flex items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2.5 dark:border-gray-700 dark:bg-gray-900">
+                    <span className="text-sm text-gray-800 dark:text-white/90">{form.department}</span>
+                    <button
+                      type="button"
+                      onClick={() => { setForm((p) => ({ ...p, department: "" })); setDeptSearch(""); setDepartmentOther(""); }}
+                      className="ml-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      aria-label="Clear department"
+                    >✕</button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Type to search department..."
+                      value={deptSearch}
+                      onFocus={() => setDeptOpen(true)}
+                      onBlur={() => setTimeout(() => setDeptOpen(false), 150)}
+                      onChange={(e) => { setDeptSearch(e.target.value); setDeptOpen(true); }}
+                      className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
+                    />
+                    {deptOpen && (() => {
+                      const q = deptSearch.toLowerCase();
+                      const matched = ALL_DEPARTMENTS.filter((d) => d.dept.toLowerCase().includes(q));
+                      // group results by their group label
+                      const grouped: Record<string, string[]> = {};
+                      matched.forEach(({ dept, group }) => {
+                        (grouped[group] ??= []).push(dept);
+                      });
+                      const showOthers = !q || "others".includes(q);
+                      return (
+                        <div className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                          {Object.entries(grouped).map(([group, depts]) => (
+                            <div key={group}>
+                              <div className="px-3 py-1.5 text-xs font-semibold text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-800/50">{group}</div>
+                              {depts.map((d) => (
+                                <button
+                                  key={d}
+                                  type="button"
+                                  onMouseDown={() => {
+                                    setForm((p) => ({ ...p, department: d }));
+                                    setDeptSearch("");
+                                    setDeptOpen(false);
+                                    setSelectedUser(null);
+                                    setUserSearch("");
+                                    setUserResults([]);
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-white/[0.04]"
+                                >
+                                  {d}
+                                </button>
+                              ))}
+                            </div>
+                          ))}
+                          {showOthers && (
+                            <button
+                              type="button"
+                              onMouseDown={() => {
+                                setForm((p) => ({ ...p, department: "Others" }));
+                                setDeptSearch("");
+                                setDeptOpen(false);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-500 italic hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-white/[0.04]"
+                            >
+                              Others
+                            </button>
+                          )}
+                          {matched.length === 0 && !showOthers && (
+                            <div className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">No departments found.</div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
                 {form.department === "Others" && (
-                  <textarea
-                    rows={2}
-                    placeholder="Please specify your department..."
-                    value={departmentOther}
-                    onChange={(e) => setDepartmentOther(e.target.value)}
-                    className="mt-2 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800 resize-none"
-                  />
+                  <div className="mt-2 flex items-start gap-2">
+                    <textarea
+                      rows={2}
+                      placeholder="Please specify your department..."
+                      value={departmentOther}
+                      onChange={(e) => setDepartmentOther(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800 resize-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { setForm((p) => ({ ...p, department: "" })); setDepartmentOther(""); }}
+                      className="mt-1 shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      aria-label="Clear"
+                    >✕</button>
+                  </div>
                 )}
               </div>
             </div>
