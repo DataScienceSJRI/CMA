@@ -233,10 +233,6 @@ export default function ConsultForm() {
 
       {/* Form body */}
       <div className="flex flex-1 items-start justify-center px-4 py-8">
-      {/* QR code (place Consultation QR image in frontend/public/images/consultation-qr.png) */}
-      <div className="w-full max-w-lg px-4 mb-4 flex justify-center">
-        <img src="/images/consultation-qr.png" alt="Consultation QR code" className="w-36 h-36 object-contain rounded-md shadow-sm" />
-      </div>
       <div className="w-full max-w-lg">
 
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-white/[0.03]">
