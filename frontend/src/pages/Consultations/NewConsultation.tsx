@@ -20,7 +20,7 @@ export default function NewConsultation() {
     date: "",
     g_name: "",
     profession: "",
-    department: "",
+    department: user?.department ?? "",
     reason: "",
     description: "",
     time_spent: 0,
@@ -181,16 +181,13 @@ export default function NewConsultation() {
             </div>
 
             <div>
-              <Label htmlFor="department">
-                Department <span className="text-error-500">*</span>
-              </Label>
+              <Label htmlFor="department">Department</Label>
               <Input
                 type="text"
                 id="department"
                 name="department"
-                placeholder="e.g. Cardiology"
                 value={formData.department}
-                onChange={handleChange}
+                disabled
               />
             </div>
 
