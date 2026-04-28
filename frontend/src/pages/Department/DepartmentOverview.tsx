@@ -17,7 +17,12 @@ import {
 } from "../../components/ui/table";
 import { userAPI, authAPI } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
+import { displayName as getDisplayName } from "../../utils/displayName";
 import type { FacultyUser, ManagedMember } from "../../types";
+
+function formatMemberName(name?: string | null): string {
+  return name || "";
+}
 
 export default function DepartmentOverview() {
   const navigate = useNavigate();
@@ -218,9 +223,9 @@ export default function DepartmentOverview() {
                       <TableCell className="whitespace-nowrap px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-500 text-sm font-bold text-white">
-                            {faculty.username.charAt(0).toUpperCase()}
+                            {getDisplayName(faculty).charAt(0).toUpperCase() || "?"}
                           </div>
-                          <p className="text-sm font-medium text-gray-800 dark:text-white/90">{faculty.username}</p>
+                          <p className="text-sm font-medium text-gray-800 dark:text-white/90">{getDisplayName(faculty)}</p>
                         </div>
                       </TableCell>
                       <TableCell className="whitespace-nowrap px-6 py-4">
@@ -277,10 +282,10 @@ export default function DepartmentOverview() {
                       <TableCell className="whitespace-nowrap px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-500 text-sm font-bold text-white">
-                            {(member.member_username || "U").charAt(0).toUpperCase()}
+                            {(formatMemberName(member.member_username) || "U").charAt(0).toUpperCase()}
                           </div>
                           <span className="text-sm font-medium text-gray-800 dark:text-white/90">
-                            {member.member_username || "Unknown"}
+                            {formatMemberName(member.member_username) || "Unknown"}
                           </span>
                         </div>
                       </TableCell>
@@ -339,9 +344,9 @@ export default function DepartmentOverview() {
                       <TableCell className="whitespace-nowrap px-6 py-4">
                         <div className="flex items-center gap-3">
                           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-500 text-sm font-bold text-white">
-                            {(member.member_username || "U").charAt(0).toUpperCase()}
+                            {(formatMemberName(member.member_username) || "U").charAt(0).toUpperCase()}
                           </div>
-                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">{member.member_username || "Unknown"}</span>
+                          <span className="text-sm font-medium text-gray-800 dark:text-white/90">{formatMemberName(member.member_username) || "Unknown"}</span>
                         </div>
                       </TableCell>
                       <TableCell className="whitespace-nowrap px-6 py-4">
@@ -449,7 +454,7 @@ export default function DepartmentOverview() {
         <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
           to{" "}
           <span className="font-medium text-gray-700 dark:text-gray-300">
-            {targetFaculty?.username}
+            {getDisplayName(targetFaculty)}
           </span>
           's team
         </p>
@@ -461,7 +466,7 @@ export default function DepartmentOverview() {
               <div className="flex items-center justify-between rounded-lg border border-brand-300 bg-brand-50 px-3 py-2.5 dark:border-brand-500/40 dark:bg-brand-500/10">
                 <div>
                   <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                    {selectedMember.username}
+                    {getDisplayName(selectedMember)}
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     {selectedMember.role}
@@ -506,7 +511,7 @@ export default function DepartmentOverview() {
                           className="flex w-full items-center justify-between px-4 py-2.5 text-left hover:bg-gray-50 dark:hover:bg-white/[0.04]"
                         >
                           <span className="text-sm font-medium text-gray-800 dark:text-white/90">
-                            {u.username}
+                            {getDisplayName(u)}
                           </span>
                           <span className="text-xs text-gray-500 dark:text-gray-400">
                             {u.role}

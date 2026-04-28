@@ -12,6 +12,7 @@ import {
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
+import { displayName as getDisplayName, initials as getInitials } from "../utils/displayName";
 import SidebarWidget from "./SidebarWidget";
 
 type NavItem = {
@@ -262,19 +263,8 @@ const AppSidebar: React.FC = () => {
 
   const showExpanded = isExpanded || isHovered || isMobileOpen;
 
-  // Derive display name — strip email domain if username looks like an email
-  const displayName = user?.username
-    ? user.username.includes("@")
-      ? user.username.split("@")[0]
-      : user.username
-    : "User";
-
-  // Initials for avatar (up to 2 chars)
-  const initials = displayName
-    .split(/[\s._-]/)
-    .slice(0, 2)
-    .map((w: string) => w[0]?.toUpperCase() ?? "")
-    .join("") || displayName[0]?.toUpperCase() || "U";
+  const displayName = getDisplayName(user) || "User";
+  const initials = getInitials(user);
 
   const handleLogout = () => {
     logout();

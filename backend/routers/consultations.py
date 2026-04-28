@@ -168,7 +168,7 @@ async def get_all_consultations(
     offset = (page - 1) * page_size
 
     query = supabase.table("consultations").select(
-        "*, users!responsible_user_id(username, role, department)", count="exact"
+        "*, users!responsible_user_id(username, first_name, last_name, role, department)", count="exact"
     )
 
     if user_role == "HOD":
@@ -534,8 +534,8 @@ async def get_managed_members(
         supabase.table("members_managed")
         .select("""
             *,
-            manager:users!manager_id(username, role),
-            member:users!managed_member_user_id(username, role, department)
+            manager:users!manager_id(username, first_name, last_name, role),
+            member:users!managed_member_user_id(username, first_name, last_name, role, department)
         """)
         .eq("manager_id", current_user["user_id"])
     )
@@ -651,7 +651,7 @@ async def get_monthly_report(
     end_date = date(year + 1, 1, 1) if month == 12 else date(year, month + 1, 1)
 
     query = supabase.table("consultations") \
-        .select("*, users!responsible_user_id(username, role)") \
+        .select("*, users!responsible_user_id(username, first_name, last_name, role)") \
         .gte("date", start_date.isoformat()) \
         .lt("date", end_date.isoformat())
 
@@ -690,7 +690,7 @@ async def get_date_range_report(
         )
 
     query = supabase.table("consultations") \
-        .select("*, users!responsible_user_id(username, role)") \
+        .select("*, users!responsible_user_id(username, first_name, last_name, role)") \
         .gte("date", start_date.isoformat()) \
         .lte("date", end_date.isoformat())
 
@@ -786,7 +786,7 @@ async def get_hierarchical_report(
         )
         faculty_q = execute_query(
             supabase.table("users")
-            .select("user_id, username, department")
+            .select("user_id, username, first_name, last_name, department")
             .eq("role", "Faculty")
             .eq("department", hod_department)
             .eq("is_active", True)
@@ -820,10 +820,16 @@ async def get_hierarchical_report(
         if member_ids:
             member_info_resp = await execute_query(
                 supabase.table("users")
-                .select("user_id, username")
+                .select("user_id, username, first_name, last_name")
                 .in_("user_id", member_ids)
             )
-            member_info = {r["user_id"]: r["username"] for r in member_info_resp.data}
+            member_info = {
+                r["user_id"]: (
+                    f"{(r.get('first_name') or '').strip()} {(r.get('last_name') or '').strip()}".strip()
+                    or None
+                )
+                for r in member_info_resp.data
+            }
         else:
             member_info = {}
 
@@ -846,7 +852,9 @@ async def get_hierarchical_report(
 
             for f in faculties_in_dept:
                 fid = f["user_id"]
-                fname = f["username"]
+                _ff = (f.get("first_name") or "").strip()
+                _fl = (f.get("last_name") or "").strip()
+                fname = f"{_ff} {_fl}".strip() or None
                 own_c = counts.get(fid, {})
                 own_total = own_c.get("total", 0)
 
@@ -858,7 +866,7 @@ async def get_hierarchical_report(
                     mc = counts.get(mid, {})
                     ms = MemberStats(
                         user_id=mid,
-                        username=member_info.get(mid, mid),
+                        username=member_info.get(mid) or "",
                         total=mc.get("total", 0),
                         completed=mc.get("completed", 0),
                         in_progress=mc.get("in_progress", 0),
@@ -874,7 +882,7 @@ async def get_hierarchical_report(
 
                 faculty_stats_list.append(FacultyStats(
                     user_id=fid,
-                    username=fname,
+                    username=fname or "",
                     own_total=own_total,
                     member_total=m_total,
                     grand_total=grand,
@@ -910,15 +918,21 @@ async def get_hierarchical_report(
         if hod_direct_member_ids:
             hod_member_info_resp = await execute_query(
                 supabase.table("users")
-                .select("user_id, username")
+                .select("user_id, username, first_name, last_name")
                 .in_("user_id", hod_direct_member_ids)
             )
-            hod_member_info = {r["user_id"]: r["username"] for r in hod_member_info_resp.data}
+            hod_member_info = {
+                r["user_id"]: (
+                    f"{(r.get('first_name') or '').strip()} {(r.get('last_name') or '').strip()}".strip()
+                    or None
+                )
+                for r in hod_member_info_resp.data
+            }
             for mid in hod_direct_member_ids:
                 mc = counts.get(mid, {})
                 hod_direct_members_list.append(MemberStats(
                     user_id=mid,
-                    username=hod_member_info.get(mid, mid),
+                    username=hod_member_info.get(mid) or "",
                     total=mc.get("total", 0),
                     completed=mc.get("completed", 0),
                     in_progress=mc.get("in_progress", 0),
@@ -955,7 +969,7 @@ async def get_hierarchical_report(
 
         member_q = execute_query(
             supabase.table("users")
-            .select("user_id, username")
+            .select("user_id, username, first_name, last_name")
             .in_("user_id", managed_ids)
         ) if managed_ids else _empty()
 
@@ -969,7 +983,13 @@ async def get_hierarchical_report(
 
         member_resp, consult_resp = await _asyncio.gather(member_q, consult_q)
 
-        member_info = {r["user_id"]: r["username"] for r in member_resp.data}
+        member_info = {
+            r["user_id"]: (
+                f"{(r.get('first_name') or '').strip()} {(r.get('last_name') or '').strip()}".strip()
+                or (r["username"].split("@")[0] if "@" in r["username"] else r["username"])
+            )
+            for r in member_resp.data
+        }
         rows = consult_resp.data
 
         counts = _count_map(rows)
@@ -1072,7 +1092,9 @@ def _build_report_summary(consultations: List[Dict]) -> ReportSummary:
 
         # Extract user info from the join (users!responsible_user_id)
         user_info = c.get("users") or {}
-        username = user_info.get("username")
+        _first = (user_info.get("first_name") or "").strip()
+        _last = (user_info.get("last_name") or "").strip()
+        username = f"{_first} {_last}".strip() or None
         role = user_info.get("role")
 
         if username:

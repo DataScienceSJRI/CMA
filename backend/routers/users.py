@@ -80,7 +80,7 @@ async def get_faculty_by_department(
     """Return all Faculty users in the given department."""
     result = await execute_query(
         supabase.table("users")
-        .select("user_id, username, role, department, is_active")
+        .select("user_id, username, first_name, last_name, role, department, is_active")
         .eq("role", "Faculty")
         .eq("department", department)
     )
@@ -124,7 +124,7 @@ async def search_users(
 
     result = await execute_query(
         supabase.table("users")
-        .select("user_id, username, role, department")
+        .select("user_id, username, first_name, last_name, role, department")
         .ilike("username", f"%{q}%")
         .eq("is_active", True)
         .neq("user_id", current_user.get("user_id"))
@@ -147,7 +147,7 @@ async def get_user_profile(
     """Get basic profile info for a user by ID. HOD and Faculty only."""
     result = await execute_query(
         supabase.table("users")
-        .select("user_id, username, role, department, is_active")
+        .select("user_id, username, first_name, last_name, role, department, is_active")
         .eq("user_id", str(user_id))
         .limit(1)
     )
@@ -176,8 +176,8 @@ async def get_faculty_managed_members(
         supabase.table("members_managed")
         .select("""
             *,
-            manager:users!manager_id(username, role),
-            member:users!managed_member_user_id(username, role, department)
+            manager:users!manager_id(username, first_name, last_name, role),
+            member:users!managed_member_user_id(username, first_name, last_name, role, department)
         """)
         .eq("manager_id", str(faculty_id))
     )

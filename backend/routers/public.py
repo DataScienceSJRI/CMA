@@ -59,7 +59,7 @@ async def search_users_public(
     """
     result = await execute_query(
         supabase.table("users")
-        .select("user_id, username, role")
+        .select("user_id, username, first_name, last_name, role")
         .ilike("username", f"%{q}%")
         .eq("department", department)
         .eq("is_active", True)

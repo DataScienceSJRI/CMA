@@ -8,6 +8,7 @@ import InvoiceModal from "../../components/cma/InvoiceModal";
 import Button from "../../components/ui/button/Button";
 import { consultationAPI, userAPI } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
+import { displayName as getDisplayName } from "../../utils/displayName";
 import type { Consultation } from "../../types";
 
 export default function MemberActivity() {
@@ -25,7 +26,7 @@ export default function MemberActivity() {
     if (memberId) {
       loadMemberConsultations();
       userAPI.getUserProfile(memberId)
-        .then((profile) => setMemberUsername(profile.username))
+        .then((profile) => setMemberUsername(getDisplayName(profile)))
         .catch(() => {});
     }
   }, [memberId]);

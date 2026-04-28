@@ -3,8 +3,13 @@ import { useAuth } from "../../context/AuthContext";
 export default function UserInfoCard() {
   const { user } = useAuth();
 
+  const firstName = user?.first_name?.trim() || "—";
+  const lastName = user?.last_name?.trim() || "—";
+
   const fields = [
-    { label: "Username", value: user?.username ?? "—" },
+    { label: "First Name", value: firstName },
+    { label: "Last Name", value: lastName },
+    { label: "Email", value: user?.username ?? "—" },
     { label: "Role", value: user?.role ?? "—" },
     { label: "Department", value: user?.department ?? "—" },
     {

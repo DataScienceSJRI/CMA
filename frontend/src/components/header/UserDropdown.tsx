@@ -3,6 +3,7 @@ import { Dropdown } from "../ui/dropdown/Dropdown";
 import { useNavigate } from "react-router";
 import { useAuth } from "../../context/AuthContext";
 import { authAPI } from "../../services/api";
+import { displayName as getDisplayName, initials as getInitials } from "../../utils/displayName";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
@@ -27,9 +28,8 @@ export default function UserDropdown() {
     navigate("/signin");
   }
 
-  const initials = user?.username
-    ? user.username.charAt(0).toUpperCase()
-    : "U";
+  const name = getDisplayName(user) || "User";
+  const avatarInitials = getInitials(user);
 
   return (
     <div className="relative">
@@ -38,11 +38,11 @@ export default function UserDropdown() {
         className="flex items-center text-gray-700 dropdown-toggle dark:text-gray-400"
       >
         <span className="mr-3 flex h-11 w-11 items-center justify-center overflow-hidden rounded-full bg-brand-500 text-white font-bold">
-          {initials}
+          {avatarInitials}
         </span>
 
         <span className="block mr-1 font-medium text-theme-sm">
-          {user?.username || "User"}
+          {name}
         </span>
         <svg
           className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${
@@ -71,7 +71,7 @@ export default function UserDropdown() {
       >
         <div>
           <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
-            {user?.username || "User"}
+            {name}
           </span>
           <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
             {user?.role || "Member"} &middot; {user?.department || ""}

@@ -18,6 +18,13 @@ _DB_ERROR = HTTPException(
 )
 
 
+def _name_from_user_info(user_info: Dict) -> Optional[str]:
+    first = (user_info.get("first_name") or "").strip()
+    last = (user_info.get("last_name") or "").strip()
+    name = f"{first} {last}".strip()
+    return name or None
+
+
 class ConsultationModel:
     """Database operations for consultations table."""
 
@@ -30,7 +37,7 @@ class ConsultationModel:
         """
         record = dict(record)  # shallow copy — avoid mutating the caller's dict
         user_info = record.pop("users", None) or {}
-        record["responsible_username"] = user_info.get("username")
+        record["responsible_username"] = _name_from_user_info(user_info)
         record["responsible_role"] = user_info.get("role")
         record["responsible_department"] = user_info.get("department")
         return record
@@ -58,7 +65,7 @@ class ConsultationModel:
             offset = (page - 1) * page_size
 
             query = supabase.table("consultations") \
-                .select("*, users!responsible_user_id(username, role, department)", count="exact") \
+                .select("*, users!responsible_user_id(username, first_name, last_name, role, department)", count="exact") \
                 .eq("responsible_user_id", user_id)
 
             if status:
@@ -104,7 +111,7 @@ class ConsultationModel:
                 return [], 0
 
             query = supabase.table("consultations") \
-                .select("*, users!responsible_user_id(username, role, department)", count="exact") \
+                .select("*, users!responsible_user_id(username, first_name, last_name, role, department)", count="exact") \
                 .in_("consultation_id", tracked_ids)
 
             if status:
@@ -167,7 +174,7 @@ class ConsultationModel:
         try:
             response = await execute_query(
                 supabase.table("consultations")
-                .select("*, users!responsible_user_id(username, role, department)")
+                .select("*, users!responsible_user_id(username, first_name, last_name, role, department)")
                 .eq("consultation_id", consultation_id)
                 .maybe_single()
             )

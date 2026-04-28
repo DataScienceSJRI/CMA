@@ -13,6 +13,7 @@ import {
   TableCell,
 } from "../../components/ui/table";
 import { userAPI } from "../../services/api";
+import { displayName as getDisplayName } from "../../utils/displayName";
 import type { ManagedMember } from "../../types";
 
 export default function FacultyTeam() {
@@ -23,20 +24,22 @@ export default function FacultyTeam() {
   const navigate = useNavigate();
 
   const [members, setMembers] = useState<ManagedMember[]>([]);
+  const [facultyName, setFacultyName] = useState("");
   const [loading, setLoading] = useState(true);
 
   const department = deptName ? decodeURIComponent(deptName) : "";
 
-  // Derive faculty name from first member's manager_username field, or fall back to the ID
-  const facultyName =
-    members[0]?.manager_username || `Faculty ${facultyId?.slice(0, 8)}`;
-
   useEffect(() => {
     if (!facultyId) return;
-    userAPI
-      .getFacultyManagedMembers(facultyId)
-      .then(setMembers)
-      .catch((err) => console.error("Failed to load team members:", err))
+    Promise.all([
+      userAPI.getFacultyManagedMembers(facultyId),
+      userAPI.getUserProfile(facultyId),
+    ])
+      .then(([fetchedMembers, profile]) => {
+        setMembers(fetchedMembers);
+        setFacultyName(getDisplayName(profile));
+      })
+      .catch((err) => console.error("Failed to load faculty team:", err))
       .finally(() => setLoading(false));
   }, [facultyId]);
 

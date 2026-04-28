@@ -10,6 +10,7 @@ import Input from "../../components/form/input/InputField";
 import StatCard from "../../components/cma/StatCard";
 import { reportAPI } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
+import { displayName as getDisplayName } from "../../utils/displayName";
 import type { HierarchicalReport, FacultyStats, MemberStats } from "../../types";
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
@@ -539,7 +540,7 @@ export default function Reports() {
 
           {report && (
             <button
-              onClick={() => downloadPDF(report, isHOD, user?.username ?? "HOD")}
+              onClick={() => downloadPDF(report, isHOD, getDisplayName(user) || "HOD")}
               className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -561,7 +562,7 @@ export default function Reports() {
 
         {!loading && report && (
           isHOD
-            ? <HODReportView report={report} username={user?.username ?? "HOD"} />
+            ? <HODReportView report={report} username={getDisplayName(user) || "HOD"} />
             : <FacultyReportView report={report} />
         )}
 

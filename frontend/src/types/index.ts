@@ -1,6 +1,8 @@
 export interface User {
   user_id: string;
   username: string;
+  first_name?: string | null;
+  last_name?: string | null;
   role: string;
   department: string;
   is_active: boolean;
@@ -73,6 +75,8 @@ export interface ConflictNotification {
 export interface PublicUserResult {
   user_id: string;
   username: string;
+  first_name?: string | null;
+  last_name?: string | null;
   role: string;
 }
 
@@ -107,6 +111,8 @@ export interface ManagedMember {
 export interface FacultyUser {
   user_id: string;
   username: string;
+  first_name?: string | null;
+  last_name?: string | null;
   role: string;
   department: string;
   is_active: boolean;

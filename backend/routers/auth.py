@@ -322,6 +322,8 @@ async def register(
                 "username": request.username,
                 "role": request.role,
                 "department": request.department or None,
+                "first_name": request.first_name or None,
+                "last_name": request.last_name or None,
                 "is_active": True,
             })
         )

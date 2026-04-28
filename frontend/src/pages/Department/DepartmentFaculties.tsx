@@ -13,6 +13,7 @@ import {
   TableCell,
 } from "../../components/ui/table";
 import { userAPI } from "../../services/api";
+import { displayName as getDisplayName } from "../../utils/displayName";
 import type { FacultyUser } from "../../types";
 
 export default function DepartmentFaculties() {
@@ -103,11 +104,11 @@ export default function DepartmentFaculties() {
                     <TableCell className="whitespace-nowrap px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-500 text-sm font-bold text-white">
-                          {faculty.username.charAt(0).toUpperCase()}
+                          {getDisplayName(faculty).charAt(0).toUpperCase() || "?"}
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                            {faculty.username}
+                            {getDisplayName(faculty)}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
                             {department}

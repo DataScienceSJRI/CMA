@@ -108,6 +108,8 @@ export const authAPI = {
     password?: string;
     role: string;
     department?: string;
+    first_name?: string;
+    last_name?: string;
   }): Promise<{ message: string }> => {
     const response = await api.post("/auth/register", userData);
     return response.data;

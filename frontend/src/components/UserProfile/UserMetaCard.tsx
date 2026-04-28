@@ -1,20 +1,11 @@
 import { useAuth } from "../../context/AuthContext";
+import { displayName as getDisplayName, initials as getInitials } from "../../utils/displayName";
 
 export default function UserMetaCard() {
   const { user } = useAuth();
 
-  const displayName = user?.username
-    ? user.username.includes("@")
-      ? user.username.split("@")[0]
-      : user.username
-    : "User";
-
-  const initials =
-    displayName
-      .split(/[\s._-]/)
-      .slice(0, 2)
-      .map((w: string) => w[0]?.toUpperCase() ?? "")
-      .join("") || displayName[0]?.toUpperCase() || "U";
+  const displayName = getDisplayName(user) || "User";
+  const initials = getInitials(user);
 
   return (
     <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">

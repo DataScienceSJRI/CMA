@@ -22,6 +22,8 @@ export default function CreateUser() {
   const isHOD = user?.role === "HOD";
 
   const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [role, setRole] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
@@ -53,9 +55,13 @@ export default function CreateUser() {
         username: email.trim().toLowerCase(),
         role,
         department: user?.department,
+        first_name: firstName.trim() || undefined,
+        last_name: lastName.trim() || undefined,
       });
       setSuccess(`Invite sent to ${email}. They will receive an email to set their password.`);
       setEmail("");
+      setFirstName("");
+      setLastName("");
       setRole("");
     } catch (err: unknown) {
       const msg =
@@ -82,12 +88,11 @@ export default function CreateUser() {
               Invite a new staff member
             </h2>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              They will receive an email with a link to set their password and
-              activate their account. Their department will be set to{" "}
+              They will receive an email with a link to set their password.
+              {/* activate their account. Their department will be set to{" "}
               <span className="font-medium text-gray-700 dark:text-gray-300">
                 {user?.department}
-              </span>
-              .
+              </span> */}
             </p>
           </div>
 
@@ -115,6 +120,29 @@ export default function CreateUser() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="first_name">First Name</Label>
+                <Input
+                  id="first_name"
+                  type="text"
+                  placeholder="First name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="last_name">Last Name</Label>
+                <Input
+                  id="last_name"
+                  type="text"
+                  placeholder="Last name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                />
+              </div>
             </div>
 
             <div>

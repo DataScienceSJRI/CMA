@@ -5,6 +5,7 @@ import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import { consultationAPI, memberAPI, userAPI } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
+import { displayName as getDisplayName } from "../../utils/displayName";
 import type { PendingConsultation, Consultation, FacultyUser, ManagedMember } from "../../types";
 
 // Minimal shape needed — satisfied by both Consultation and PendingConsultation
@@ -116,7 +117,7 @@ export default function AssignModal({ consultation, onClose, onAssigned, isPendi
             onClick={() =>
               setSelected({
                 user_id: user!.user_id,
-                username: user!.username,
+                username: getDisplayName(user),
                 role: user!.role,
               })
             }
@@ -132,7 +133,7 @@ export default function AssignModal({ consultation, onClose, onAssigned, isPendi
                 Assign to myself
               </p>
               <p className="text-xs text-brand-500 dark:text-brand-400">
-                {user!.username} · {user!.role}
+                {getDisplayName(user)} · {user!.role}
               </p>
             </div>
           </button>
@@ -207,13 +208,13 @@ export default function AssignModal({ consultation, onClose, onAssigned, isPendi
                           key={(u as FacultyUser).user_id}
                           onClick={() => setSelected({
                             user_id: (u as FacultyUser).user_id,
-                            username: (u as FacultyUser).username,
+                            username: getDisplayName(u as FacultyUser),
                             role: (u as FacultyUser).role,
                           })}
                           className="flex w-full items-center justify-between px-4 py-2.5 text-left hover:bg-gray-50 dark:hover:bg-white/[0.04]"
                         >
                           <span className="text-sm font-medium text-gray-800 dark:text-white/90">
-                            {(u as FacultyUser).username}
+                            {getDisplayName(u as FacultyUser)}
                           </span>
                           <span className="text-xs text-gray-500 dark:text-gray-400">
                             {(u as FacultyUser).role}

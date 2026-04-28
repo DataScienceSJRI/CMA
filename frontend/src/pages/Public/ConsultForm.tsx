@@ -4,6 +4,7 @@ import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import Button from "../../components/ui/button/Button";
 import { publicAPI } from "../../services/api";
+import { displayName as getDisplayName } from "../../utils/displayName";
 import type { PublicUserResult } from "../../types";
 
 const STAFF_DEPARTMENT = "Biostatistics";
@@ -210,7 +211,7 @@ export default function ConsultForm() {
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {selectedUser
-              ? `Your consultation request has been sent directly to ${selectedUser.username}.`
+              ? `Your consultation request has been sent directly to ${getDisplayName(selectedUser)}.`
               : "Your consultation request has been received. A faculty member will be assigned to your session shortly."}
           </p>
         </div>
@@ -474,7 +475,7 @@ export default function ConsultForm() {
                 <div className="flex items-center justify-between rounded-lg border border-brand-300 bg-brand-50 px-3 py-2.5 dark:border-brand-500/40 dark:bg-brand-500/10">
                   <div>
                     <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                      {selectedUser.username}
+                      {getDisplayName(selectedUser)}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
                       {selectedUser.role}
@@ -516,7 +517,7 @@ export default function ConsultForm() {
                               className="flex w-full items-center justify-between px-4 py-2.5 text-left hover:bg-gray-50 dark:hover:bg-white/[0.04]"
                             >
                               <span className="text-sm font-medium text-gray-800 dark:text-white/90">
-                                {u.username}
+                                {getDisplayName(u)}
                               </span>
                               <span className="text-xs text-gray-500 dark:text-gray-400">
                                 {u.role}
