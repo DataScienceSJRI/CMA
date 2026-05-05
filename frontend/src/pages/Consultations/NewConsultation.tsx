@@ -9,6 +9,7 @@ import Select from "../../components/form/Select";
 import Button from "../../components/ui/button/Button";
 import { consultationAPI, memberAPI } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
+import { ALL_DEPARTMENTS } from "../../constants/departments";
 import type { ConsultationFormData, ManagedMember } from "../../types";
 
 export default function NewConsultation() {
@@ -23,12 +24,20 @@ export default function NewConsultation() {
     department: user?.department ?? "",
     reason: "",
     description: "",
-    time_spent: 0,
+    time_spent: "",
     project_from: "",
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Department typeahead state
+  const [deptSearch, setDeptSearch] = useState("");
+  const [deptOpen, setDeptOpen] = useState(false);
+  const [deptOther, setDeptOther] = useState("");
+
+  const [professionOther, setProfessionOther] = useState("");
+  const [reasonOther, setReasonOther] = useState("");
 
   // Managed members for HOD/Faculty assignment
   const [managedMembers, setManagedMembers] = useState<ManagedMember[]>([]);
@@ -43,10 +52,10 @@ export default function NewConsultation() {
   }, [isManager]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type } = e.target;
+    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "number" ? (value === "" ? 0 : Number(value)) : value,
+      [name]: value,
     }));
   };
 
@@ -55,8 +64,39 @@ export default function NewConsultation() {
     setLoading(true);
     setError("");
 
+    if (formData.profession === "Other" && !professionOther.trim()) {
+      setError("Please describe your profession.");
+      setLoading(false);
+      return;
+    }
+
+    if (formData.reason === "Other" && !reasonOther.trim()) {
+      setError("Please describe your reason for consultation.");
+      setLoading(false);
+      return;
+    }
+
+    if (formData.department === "Others" && !deptOther.trim()) {
+      setError("Please specify your department.");
+      setLoading(false);
+      return;
+    }
+
+    const actualProfession =
+      formData.profession === "Other" ? professionOther.trim() : formData.profession;
+    const actualReason =
+      formData.reason === "Other" ? reasonOther.trim() : formData.reason;
+    const actualDepartment =
+      formData.department === "Others" ? deptOther.trim() : formData.department;
+
     try {
-      await consultationAPI.createConsultation(formData);
+      await consultationAPI.createConsultation({
+        ...formData,
+        profession: actualProfession,
+        reason: actualReason,
+        department: actualDepartment,
+        time_spent: formData.time_spent !== "" ? Number(formData.time_spent) : undefined,
+      });
       navigate("/");
     } catch (err: unknown) {
       const axiosErr = err as {
@@ -173,22 +213,139 @@ export default function NewConsultation() {
               <Select
                 options={professionOptions}
                 placeholder="Select a profession"
-                onChange={(value) =>
-                  setFormData((prev) => ({ ...prev, profession: value }))
-                }
+                onChange={(value) => {
+                  setFormData((prev) => ({ ...prev, profession: value }));
+                  if (value !== "Other") setProfessionOther("");
+                }}
                 defaultValue={formData.profession}
               />
+              {formData.profession === "Other" && (
+                <input
+                  type="text"
+                  placeholder="Please specify your profession..."
+                  value={professionOther}
+                  onChange={(e) => setProfessionOther(e.target.value)}
+                  className="mt-2 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                />
+              )}
             </div>
 
-            <div>
-              <Label htmlFor="department">Department</Label>
-              <Input
-                type="text"
-                id="department"
-                name="department"
-                value={formData.department}
-                disabled
-              />
+            {/* Department — searchable typeahead */}
+            <div className="sm:col-span-2">
+              <Label>
+                Department <span className="text-error-500">*</span>
+              </Label>
+              {formData.department && formData.department !== "Others" ? (
+                <div className="flex items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2.5 dark:border-gray-700 dark:bg-gray-900">
+                  <span className="text-sm text-gray-800 dark:text-white/90">
+                    {formData.department}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData((p) => ({ ...p, department: "" }));
+                      setDeptSearch("");
+                      setDeptOther("");
+                    }}
+                    className="ml-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    aria-label="Clear department"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Type to search department..."
+                    value={deptSearch}
+                    onFocus={() => setDeptOpen(true)}
+                    onBlur={() => setTimeout(() => setDeptOpen(false), 150)}
+                    onChange={(e) => {
+                      setDeptSearch(e.target.value);
+                      setDeptOpen(true);
+                    }}
+                    className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30"
+                  />
+                  {deptOpen &&
+                    (() => {
+                      const q = deptSearch.toLowerCase();
+                      const matched = ALL_DEPARTMENTS.filter((d) =>
+                        d.dept.toLowerCase().includes(q)
+                      );
+                      const grouped: Record<string, string[]> = {};
+                      matched.forEach(({ dept, group }) => {
+                        (grouped[group] ??= []).push(dept);
+                      });
+                      const showOthers = !q || "others".includes(q);
+                      return (
+                        <div className="absolute z-20 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                          {Object.entries(grouped).map(([group, depts]) => (
+                            <div key={group}>
+                              <div className="bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-400 dark:bg-gray-800/50 dark:text-gray-500">
+                                {group}
+                              </div>
+                              {depts.map((d) => (
+                                <button
+                                  key={d}
+                                  type="button"
+                                  onMouseDown={() => {
+                                    setFormData((p) => ({ ...p, department: d }));
+                                    setDeptSearch("");
+                                    setDeptOpen(false);
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-white/[0.04]"
+                                >
+                                  {d}
+                                </button>
+                              ))}
+                            </div>
+                          ))}
+                          {showOthers && (
+                            <button
+                              type="button"
+                              onMouseDown={() => {
+                                setFormData((p) => ({ ...p, department: "Others" }));
+                                setDeptSearch("");
+                                setDeptOpen(false);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm italic text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-white/[0.04]"
+                            >
+                              Others
+                            </button>
+                          )}
+                          {matched.length === 0 && !showOthers && (
+                            <div className="px-4 py-3 text-sm text-gray-400 dark:text-gray-500">
+                              No departments found.
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                </div>
+              )}
+              {formData.department === "Others" && (
+                <div className="mt-2 flex items-start gap-2">
+                  <input
+                    type="text"
+                    placeholder="Please specify your department..."
+                    value={deptOther}
+                    onChange={(e) => setDeptOther(e.target.value)}
+                    className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData((p) => ({ ...p, department: "" }));
+                      setDeptOther("");
+                    }}
+                    className="mt-2.5 shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    aria-label="Clear"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
             </div>
 
             <div>
@@ -198,22 +355,29 @@ export default function NewConsultation() {
               <Select
                 options={reasonOptions}
                 placeholder="Select a reason"
-                onChange={(value) =>
-                  setFormData((prev) => ({ ...prev, reason: value }))
-                }
+                onChange={(value) => {
+                  setFormData((prev) => ({ ...prev, reason: value }));
+                  if (value !== "Other") setReasonOther("");
+                }}
                 defaultValue={formData.reason}
               />
+              {formData.reason === "Other" && (
+                <input
+                  type="text"
+                  placeholder="Please specify your reason..."
+                  value={reasonOther}
+                  onChange={(e) => setReasonOther(e.target.value)}
+                  className="mt-2 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                />
+              )}
             </div>
 
             <div>
-              <Label htmlFor="time_spent">
-                Time Spent (minutes) <span className="text-error-500">*</span>
-              </Label>
+              <Label htmlFor="time_spent">Time Spent (minutes)</Label>
               <Input
-                type="number"
+                type="text"
                 id="time_spent"
                 name="time_spent"
-                min="0"
                 placeholder="e.g. 60"
                 value={formData.time_spent}
                 onChange={handleChange}

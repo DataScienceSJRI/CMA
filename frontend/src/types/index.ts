@@ -87,7 +87,7 @@ export interface ConsultationFormData {
   department: string;
   reason: string;
   description: string;
-  time_spent: number | string;
+  time_spent?: number | string;
   project_from: string;
   progress?: string;
   payment_status?: string;
