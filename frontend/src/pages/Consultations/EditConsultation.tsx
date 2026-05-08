@@ -85,14 +85,18 @@ export default function EditConsultation() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target as HTMLInputElement;
-    setFormData((prev) =>
-      prev
-        ? {
-            ...prev,
-            [name]: type === "number" ? (value === "" ? 0 : Number(value)) : value,
-          }
-        : prev
-    );
+    let parsed: string | number = value;
+    if (type === "number") {
+      if (value === "") {
+        parsed = "";
+      } else if (name === "time_spent") {
+        const n = parseInt(value, 10);
+        parsed = isNaN(n) ? "" : n;
+      } else {
+        parsed = Number(value);
+      }
+    }
+    setFormData((prev) => prev ? { ...prev, [name]: parsed } : prev);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -116,10 +120,13 @@ export default function EditConsultation() {
       navigate("/consultations");
     } catch (err: unknown) {
       const axiosErr = err as {
-        response?: { data?: { message?: string; detail?: string } };
+        response?: { data?: { message?: string; detail?: string; details?: { loc: (string | number)[]; msg: string }[] } };
       };
+      const details = axiosErr.response?.data?.details;
+      const detailMsg = details?.map((d) => `${d.loc.slice(1).join(".")}: ${d.msg}`).join("; ");
       setSubmitError(
-        axiosErr.response?.data?.message ??
+        detailMsg ??
+          axiosErr.response?.data?.message ??
           axiosErr.response?.data?.detail ??
           "Failed to update consultation"
       );
@@ -267,6 +274,7 @@ export default function EditConsultation() {
                 id="time_spent"
                 name="time_spent"
                 min="0"
+                step={1}
                 value={formData.time_spent}
                 onChange={handleChange}
               />
