@@ -4,6 +4,11 @@ from datetime import date, datetime
 from uuid import UUID
 from .common import PaymentStatus, ConsultationStatus
 
+# Alias avoids the annotation-resolution collision in ConsultationUpdate where the
+# field named `date` with default=None shadows `datetime.date` in Pydantic v2's
+# localns lookup, causing Optional[date] to resolve as NoneType instead.
+_Date = date
+
 
 # ── Manual consultation creation (HOD/Faculty) ────────────────────────────────
 
@@ -26,7 +31,7 @@ class ConsultationCreate(ConsultationBase):
     assigned_to_user_id: Optional[UUID] = None  # HOD/Faculty can assign to a managed member
 
 class ConsultationUpdate(BaseModel):
-    date: Optional[date] = None
+    date: Optional[_Date] = None
     g_name: Optional[str] = Field(default=None, max_length=255)
     profession: Optional[str] = Field(default=None, max_length=255)
     department: Optional[str] = Field(default=None, max_length=255)
