@@ -42,7 +42,7 @@ class ConsultationUpdate(BaseModel):
     project_from: Optional[str] = Field(default=None, max_length=255)
     payment_status: Optional[PaymentStatus] = None
     amount: Optional[float] = Field(default=None, ge=0, le=10_000_000)
-    report_submission_date: Optional[date] = None
+    report_submission_date: Optional[_Date] = None
     status: Optional[ConsultationStatus] = None
 
 
