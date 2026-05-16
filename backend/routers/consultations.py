@@ -157,7 +157,7 @@ async def get_all_consultations(
 ):
     """
     Get all consultations visible to the current user (paginated).
-    HOD: all consultations in their department.
+    HOD: all consultations by HOD + all faculty in dept + all their members.
     Faculty: their own + all managed members' consultations.
     Member: their own consultations only.
     """
@@ -173,9 +173,28 @@ async def get_all_consultations(
 
     if user_role == "HOD":
         user_department = _require_department(current_user)
-        query = query.eq("department", user_department)
+        # Collect all user IDs in scope: HOD + all faculty in dept + all their members
+        faculty_resp = await execute_query(
+            supabase.table("users")
+            .select("user_id")
+            .eq("department", user_department)
+            .in_("role", ["HOD", "Faculty"])
+        )
+        faculty_ids = [f["user_id"] for f in faculty_resp.data]
+        manager_ids = list({user_id} | set(faculty_ids))
+        mm_resp = await execute_query(
+            supabase.table("members_managed")
+            .select("managed_member_user_id")
+            .in_("manager_id", manager_ids)
+        )
+        member_ids = [m["managed_member_user_id"] for m in mm_resp.data]
+        all_ids = list(set(manager_ids) | set(member_ids))
         if assigned_to_user_id:
+            if assigned_to_user_id not in all_ids:
+                return PaginatedResponse.build([], 0, page, page_size)
             query = query.eq("responsible_user_id", assigned_to_user_id)
+        else:
+            query = query.in_("responsible_user_id", all_ids)
     elif user_role == "Faculty":
         managed_resp = await execute_query(
             supabase.table("members_managed")
