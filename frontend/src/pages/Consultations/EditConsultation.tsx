@@ -12,6 +12,7 @@ import { consultationAPI } from "../../services/api";
 import type { ConsultationFormData, ConflictNotification } from "../../types";
 
 const professionOptions = [
+  { value: "Student", label: "Student" },
   { value: "PhD Student", label: "PhD Student" },
   { value: "Medical Doctor", label: "Medical Doctor" },
   { value: "Nursing Staff", label: "Nursing Staff" },

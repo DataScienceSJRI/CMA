@@ -69,6 +69,15 @@ const DEPARTMENT_GROUPS = [
       },
     ],
   },
+  {
+    institution: "Allied Health Sciences",
+    categories: [
+      {
+        label: "Departments",
+        departments: ["Allied Health Sciences"],
+      },
+    ],
+  },
 ];
 
 export const ALL_DEPARTMENTS: { dept: string; group: string }[] =

@@ -113,6 +113,7 @@ export default function NewConsultation() {
   };
 
   const professionOptions = [
+    { value: "Student", label: "Student" },
     { value: "PhD Student", label: "PhD Student" },
     { value: "Medical Doctor", label: "Medical Doctor" },
     { value: "Nursing Staff", label: "Nursing Staff" },
