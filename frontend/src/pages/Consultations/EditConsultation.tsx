@@ -107,6 +107,7 @@ export default function EditConsultation() {
     if (!raw.report_submission_date) delete raw.report_submission_date;
     if (!raw.progress) delete raw.progress;
     if (raw.time_spent === "") delete raw.time_spent;
+    else if (raw.time_spent !== undefined) raw.time_spent = Math.round(Number(raw.time_spent));
     if (raw.amount === "") delete raw.amount;
     const payload = raw as Partial<ConsultationFormData>;
 

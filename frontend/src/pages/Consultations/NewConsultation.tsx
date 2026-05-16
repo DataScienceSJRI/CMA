@@ -95,7 +95,7 @@ export default function NewConsultation() {
         profession: actualProfession,
         reason: actualReason,
         department: actualDepartment,
-        time_spent: formData.time_spent !== "" ? Number(formData.time_spent) : undefined,
+        time_spent: formData.time_spent !== "" ? Math.round(Number(formData.time_spent)) : undefined,
       });
       navigate("/");
     } catch (err: unknown) {
@@ -376,11 +376,13 @@ export default function NewConsultation() {
             <div>
               <Label htmlFor="time_spent">Time Spent (minutes)</Label>
               <Input
-                type="text"
+                type="number"
                 id="time_spent"
                 name="time_spent"
                 placeholder="e.g. 60"
                 value={formData.time_spent}
+                step={1}
+                min="0"
                 onChange={handleChange}
               />
             </div>
