@@ -25,6 +25,7 @@ export default function NewConsultation() {
     reason: "",
     description: "",
     time_spent: "",
+    project_from: "",
   });
 
   const [loading, setLoading] = useState(false);
