@@ -60,6 +60,15 @@ const DEPARTMENT_GROUPS = [
       },
     ],
   },
+  {
+    institution: "College of Nursing",
+    categories: [
+      {
+        label: "Departments",
+        departments: ["College of Nursing"],
+      },
+    ],
+  },
 ];
 
 export const ALL_DEPARTMENTS: { dept: string; group: string }[] =

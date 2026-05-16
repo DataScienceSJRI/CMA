@@ -15,6 +15,7 @@ const professionOptions = [
   { value: "PhD Student", label: "PhD Student" },
   { value: "Medical Doctor", label: "Medical Doctor" },
   { value: "Nursing Staff", label: "Nursing Staff" },
+  { value: "Nursing Student", label: "Nursing Student" },
   { value: "Researcher", label: "Researcher" },
   { value: "Faculty", label: "Faculty" },
   { value: "Other", label: "Other" },
@@ -65,7 +66,6 @@ export default function EditConsultation() {
           reason: data.reason,
           description: data.description ?? "",
           time_spent: data.time_spent ?? "",
-          project_from: data.project_from ?? "",
           progress: data.progress ?? "",
           payment_status: data.payment_status,
           report_submission_date: data.report_submission_date ?? "",
@@ -106,7 +106,6 @@ export default function EditConsultation() {
     const raw = { ...formData } as Record<string, unknown>;
     if (!raw.report_submission_date) delete raw.report_submission_date;
     if (!raw.progress) delete raw.progress;
-    if (!raw.project_from) delete raw.project_from;
     if (raw.time_spent === "") delete raw.time_spent;
     if (raw.amount === "") delete raw.amount;
     const payload = raw as Partial<ConsultationFormData>;
@@ -268,20 +267,6 @@ export default function EditConsultation() {
                 name="time_spent"
                 min="0"
                 value={formData.time_spent}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="project_from">
-                Project From{" "}
-                <span className="text-xs font-normal text-gray-400">(optional)</span>
-              </Label>
-              <Input
-                type="text"
-                id="project_from"
-                name="project_from"
-                value={formData.project_from}
                 onChange={handleChange}
               />
             </div>

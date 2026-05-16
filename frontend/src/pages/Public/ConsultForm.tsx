@@ -22,6 +22,7 @@ const professionOptions = [
   { value: "PhD Student", label: "PhD Student" },
   { value: "Medical Doctor", label: "Medical Doctor" },
   { value: "Nursing Staff", label: "Nursing Staff" },
+  { value: "Nursing Student", label: "Nursing Student" },
   { value: "Researcher", label: "Researcher" },
   { value: "Faculty", label: "Faculty" },
   { value: "Other", label: "Other" },

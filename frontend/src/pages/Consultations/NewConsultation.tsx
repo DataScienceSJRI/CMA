@@ -25,7 +25,6 @@ export default function NewConsultation() {
     reason: "",
     description: "",
     time_spent: "",
-    project_from: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -116,6 +115,7 @@ export default function NewConsultation() {
     { value: "PhD Student", label: "PhD Student" },
     { value: "Medical Doctor", label: "Medical Doctor" },
     { value: "Nursing Staff", label: "Nursing Staff" },
+    { value: "Nursing Student", label: "Nursing Student" },
     { value: "Researcher", label: "Researcher" },
     { value: "Faculty", label: "Faculty" },
     { value: "Other", label: "Other" },
@@ -384,19 +384,6 @@ export default function NewConsultation() {
               />
             </div>
 
-            <div>
-              <Label htmlFor="project_from">
-                Project From <span className="text-error-500">*</span>
-              </Label>
-              <Input
-                type="text"
-                id="project_from"
-                name="project_from"
-                placeholder="e.g. Research Grant XYZ"
-                value={formData.project_from}
-                onChange={handleChange}
-              />
-            </div>
           </div>
 
           <div>
