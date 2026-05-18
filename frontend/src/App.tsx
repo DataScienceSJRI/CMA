@@ -9,6 +9,7 @@ import PersonalDashboard from "./pages/Dashboard/PersonalDashboard";
 import NewConsultation from "./pages/Consultations/NewConsultation";
 import AllConsultations from "./pages/Consultations/AllConsultations";
 import EditConsultation from "./pages/Consultations/EditConsultation";
+import ViewConsultation from "./pages/Consultations/ViewConsultation";
 import DepartmentOverview from "./pages/Department/DepartmentOverview";
 import DepartmentFaculties from "./pages/Department/DepartmentFaculties";
 import FacultyTeam from "./pages/Department/FacultyTeam";
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="/consultations" element={<AllConsultations />} />
           <Route path="/new-consultation" element={<NewConsultation />} />
           <Route path="/consultation/:id/edit" element={<EditConsultation />} />
+          <Route path="/consultation/:id/view" element={<ViewConsultation />} />
 
           {/* HOD & Faculty only */}
           <Route

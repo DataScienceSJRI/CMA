@@ -21,6 +21,7 @@ interface ConsultationTableProps {
   onInvoice?: (consultation: Consultation) => void;
   onUpdate?: (id: string, field: "status" | "payment_status", value: string) => void;
   showActions?: boolean;
+  showAssigneeFilter?: boolean;
   itemsPerPage?: number;
 }
 
@@ -33,12 +34,18 @@ export default function ConsultationTable({
   onInvoice,
   onUpdate,
   showActions = true,
+  showAssigneeFilter = false,
   itemsPerPage = 10,
 }: ConsultationTableProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [paymentFilter, setPaymentFilter] = useState("");
+  const [assigneeFilter, setAssigneeFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+
+  const uniqueAssignees = Array.from(
+    new Set(consultations.map((c) => c.responsible_username).filter(Boolean))
+  ).sort() as string[];
 
   const filtered = consultations.filter((c) => {
     const matchesSearch =
@@ -47,7 +54,8 @@ export default function ConsultationTable({
       c.reason?.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = !statusFilter || c.status === statusFilter;
     const matchesPayment = !paymentFilter || c.payment_status === paymentFilter;
-    return matchesSearch && matchesStatus && matchesPayment;
+    const matchesAssignee = !assigneeFilter || c.responsible_username === assigneeFilter;
+    return matchesSearch && matchesStatus && matchesPayment && matchesAssignee;
   });
 
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
@@ -114,6 +122,18 @@ export default function ConsultationTable({
             <option value="Not Paid">Not Paid</option>
             <option value="Paid">Paid</option>
           </select>
+          {showAssigneeFilter && uniqueAssignees.length > 0 && (
+            <select
+              value={assigneeFilter}
+              onChange={(e) => { setAssigneeFilter(e.target.value); setCurrentPage(1); }}
+              className="h-9 rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
+            >
+              <option value="">All Members</option>
+              {uniqueAssignees.map((name) => (
+                <option key={name} value={name}>{name}</option>
+              ))}
+            </select>
+          )}
           <input
             type="search"
             placeholder="Search..."
@@ -165,6 +185,12 @@ export default function ConsultationTable({
                   isHeader
                   className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
                 >
+                  Assigned To
+                </TableCell>
+                <TableCell
+                  isHeader
+                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+                >
                   Status
                 </TableCell>
                 <TableCell
@@ -206,6 +232,9 @@ export default function ConsultationTable({
                   </TableCell>
                   <TableCell className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                     {c.reason}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                    {c.responsible_username ?? "—"}
                   </TableCell>
                   <TableCell className="whitespace-nowrap px-6 py-4">
                     {onUpdate ? (

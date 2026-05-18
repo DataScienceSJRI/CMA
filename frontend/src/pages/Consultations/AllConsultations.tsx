@@ -61,10 +61,11 @@ export default function AllConsultations() {
         <ConsultationTable
           consultations={consultations}
           loading={loading}
-          onEdit={(id) => navigate(`/consultation/${id}/edit`)}
+          onEdit={(id) => navigate(isHOD ? `/consultation/${id}/view` : `/consultation/${id}/edit`)}
           onReassign={isFaculty ? (c) => setReassignTarget(c) : undefined}
           onInvoice={canInvoice ? (c) => setInvoiceTarget(c) : undefined}
           showActions
+          showAssigneeFilter={isHOD}
         />
       </div>
 
