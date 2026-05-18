@@ -6,6 +6,7 @@ import ComponentCard from "../../components/common/ComponentCard";
 import Label from "../../components/form/Label";
 import Input from "../../components/form/input/InputField";
 import Select from "../../components/form/Select";
+import DatePicker from "../../components/form/date-picker";
 import Button from "../../components/ui/button/Button";
 import { consultationAPI, memberAPI } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
@@ -18,10 +19,10 @@ export default function NewConsultation() {
   const isManager = user?.role === "HOD" || user?.role === "Faculty";
 
   const [formData, setFormData] = useState<ConsultationFormData>({
-    date: "",
+    date: new Date().toISOString().split("T")[0],
     g_name: "",
     profession: "",
-    department: user?.department ?? "",
+    department: "",
     reason: "",
     description: "",
     time_spent: "",
@@ -162,18 +163,18 @@ export default function NewConsultation() {
               </Label>
               <Select
                 options={[
-                  { value: "", label: "Myself" },
+                  { value: "__self__", label: "Myself" },
                   ...managedMembers.map((m) => ({
                     value: m.managed_member_user_id,
                     label: m.member_username || m.managed_member_user_id,
                   })),
                 ]}
-                placeholder="Select a member"
-                defaultValue={formData.assigned_to_user_id ?? ""}
+                placeholder="Select..."
+                defaultValue={formData.assigned_to_user_id ?? "__self__"}
                 onChange={(value) =>
                   setFormData((prev) => ({
                     ...prev,
-                    assigned_to_user_id: value || undefined,
+                    assigned_to_user_id: value === "__self__" ? undefined : value,
                   }))
                 }
               />
@@ -182,15 +183,14 @@ export default function NewConsultation() {
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <div>
-              <Label htmlFor="date">
-                Date <span className="text-error-500">*</span>
-              </Label>
-              <Input
-                type="date"
-                id="date"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
+              <DatePicker
+                id="consultation-date"
+                label="Date *"
+                defaultDate={formData.date}
+                placeholder="Select date"
+                onChange={(_dates, dateStr) =>
+                  setFormData((prev) => ({ ...prev, date: dateStr }))
+                }
               />
             </div>
 
@@ -237,7 +237,8 @@ export default function NewConsultation() {
               <Label>
                 Department <span className="text-error-500">*</span>
               </Label>
-              {formData.department && formData.department !== "Others" ? (
+              {formData.department ? (
+                /* A department is selected (including "Others") — show chip with clear button */
                 <div className="flex items-center justify-between rounded-lg border border-gray-300 bg-white px-3 py-2.5 dark:border-gray-700 dark:bg-gray-900">
                   <span className="text-sm text-gray-800 dark:text-white/90">
                     {formData.department}
@@ -256,6 +257,7 @@ export default function NewConsultation() {
                   </button>
                 </div>
               ) : (
+                /* Nothing selected — show searchable dropdown */
                 <div className="relative">
                   <input
                     type="text"
@@ -327,26 +329,13 @@ export default function NewConsultation() {
                 </div>
               )}
               {formData.department === "Others" && (
-                <div className="mt-2 flex items-start gap-2">
-                  <input
-                    type="text"
-                    placeholder="Please specify your department..."
-                    value={deptOther}
-                    onChange={(e) => setDeptOther(e.target.value)}
-                    className="h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData((p) => ({ ...p, department: "" }));
-                      setDeptOther("");
-                    }}
-                    className="mt-2.5 shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                    aria-label="Clear"
-                  >
-                    ✕
-                  </button>
-                </div>
+                <input
+                  type="text"
+                  placeholder="Please specify your department..."
+                  value={deptOther}
+                  onChange={(e) => setDeptOther(e.target.value)}
+                  className="mt-2 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:border-brand-300 focus:outline-none focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-white/[0.03] dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800"
+                />
               )}
             </div>
 

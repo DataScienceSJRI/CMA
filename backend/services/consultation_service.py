@@ -100,8 +100,8 @@ class ConsultationService:
         if consultation_data.get("responsible_user_id") == user_id:
             return True
 
-        # HOD can read and write anything in their department
-        if user_role == "HOD" and consultation_data.get("department") == user_department:
+        # HOD has full access to all consultations.
+        if user_role == "HOD":
             return True
 
         # Faculty: tracking grants read-only access, never write
