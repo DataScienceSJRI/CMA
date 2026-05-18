@@ -790,58 +790,56 @@ async def get_hierarchical_report(
     # ── HOD PATH ──────────────────────────────────────────────────────────────
     if user_role == "HOD":
         hod_department = _require_department(current_user)
-
-        # Queries 1–4 can be dispatched concurrently since they are independent.
-        # asyncio.gather() runs all four in separate threads simultaneously,
-        # reducing total I/O time from ~(q1+q2+q3+q4) to ~max(q1,q2,q3,q4).
         import asyncio as _asyncio
 
-        consult_q = execute_query(
-            supabase.table("consultations")
-            .select("responsible_user_id, status")
-            .eq("department", hod_department)
-            .gte("date", d_from.isoformat())
-            .lt("date", d_to.isoformat())
-        )
-        faculty_q = execute_query(
+        # 1. Faculty in dept (needed to scope the consultation query correctly)
+        faculty_resp = await execute_query(
             supabase.table("users")
             .select("user_id, username, first_name, last_name, department")
             .eq("role", "Faculty")
             .eq("department", hod_department)
             .eq("is_active", True)
         )
-        # Queries 3 & 4 depend on results of query 2 — fetch after
-        consult_resp, faculty_resp = await _asyncio.gather(consult_q, faculty_q)
-
-        rows = consult_resp.data
         faculty_rows = faculty_resp.data
-
-        counts = _count_map(rows)
-        overall_total = sum(v["total"] for v in counts.values())
-        overall_completed = sum(v["completed"] for v in counts.values())
-        overall_in_progress = sum(v["in_progress"] for v in counts.values())
-
         faculty_ids = [f["user_id"] for f in faculty_rows]
 
-        # 3. All managed-member relationships (manager must be in faculty list)
-        if faculty_ids:
-            mm_resp = await execute_query(
+        # 2. Members managed by faculty + HOD's own direct members (concurrent)
+        async def _get_mm(manager_ids):
+            if not manager_ids:
+                return []
+            r = await execute_query(
                 supabase.table("members_managed")
                 .select("manager_id, managed_member_user_id")
-                .in_("manager_id", faculty_ids)
+                .in_("manager_id", manager_ids)
             )
-            mm_rows = mm_resp.data
-        else:
-            mm_rows = []
+            return r.data
 
-        # 4. Member user info (username)
+        faculty_mm, hod_mm = await _asyncio.gather(
+            _get_mm(faculty_ids),
+            _get_mm([user_id]),
+        )
+        mm_rows = faculty_mm
+        hod_direct_member_ids = [r["managed_member_user_id"] for r in hod_mm]
+
         member_ids = list({m["managed_member_user_id"] for m in mm_rows})
-        if member_ids:
-            member_info_resp = await execute_query(
+        all_ids = list(set([user_id] + faculty_ids + member_ids + hod_direct_member_ids))
+
+        # 3. Consultations by responsible user + member info (concurrent)
+        consult_q = execute_query(
+            supabase.table("consultations")
+            .select("responsible_user_id, status")
+            .in_("responsible_user_id", all_ids)
+            .gte("date", d_from.isoformat())
+            .lt("date", d_to.isoformat())
+        )
+        all_member_ids = list(set(member_ids + hod_direct_member_ids))
+        if all_member_ids:
+            member_info_q = execute_query(
                 supabase.table("users")
                 .select("user_id, username, first_name, last_name")
-                .in_("user_id", member_ids)
+                .in_("user_id", all_member_ids)
             )
+            consult_resp, member_info_resp = await _asyncio.gather(consult_q, member_info_q)
             member_info = {
                 r["user_id"]: (
                     f"{(r.get('first_name') or '').strip()} {(r.get('last_name') or '').strip()}".strip()
@@ -850,7 +848,14 @@ async def get_hierarchical_report(
                 for r in member_info_resp.data
             }
         else:
+            consult_resp = await consult_q
             member_info = {}
+
+        rows = consult_resp.data
+        counts = _count_map(rows)
+        overall_total = sum(v["total"] for v in counts.values())
+        overall_completed = sum(v["completed"] for v in counts.values())
+        overall_in_progress = sum(v["in_progress"] for v in counts.values())
 
         # 5. Build faculty → members map
         faculty_members: Dict = {}  # faculty_id → [managed_member_user_id, ...]
@@ -925,37 +930,17 @@ async def get_hierarchical_report(
         hod_c = counts.get(user_id, {})
         hod_own = hod_c.get("total", 0)
 
-        # HOD's direct managed members (not through any Faculty)
-        hod_mm_resp = await execute_query(
-            supabase.table("members_managed")
-            .select("managed_member_user_id")
-            .eq("manager_id", user_id)
-        )
-        hod_direct_member_ids = [r["managed_member_user_id"] for r in hod_mm_resp.data]
-
+        # HOD's direct managed members — already fetched above, reuse member_info
         hod_direct_members_list: list = []
-        if hod_direct_member_ids:
-            hod_member_info_resp = await execute_query(
-                supabase.table("users")
-                .select("user_id, username, first_name, last_name")
-                .in_("user_id", hod_direct_member_ids)
-            )
-            hod_member_info = {
-                r["user_id"]: (
-                    f"{(r.get('first_name') or '').strip()} {(r.get('last_name') or '').strip()}".strip()
-                    or None
-                )
-                for r in hod_member_info_resp.data
-            }
-            for mid in hod_direct_member_ids:
-                mc = counts.get(mid, {})
-                hod_direct_members_list.append(MemberStats(
-                    user_id=mid,
-                    username=hod_member_info.get(mid) or "",
-                    total=mc.get("total", 0),
-                    completed=mc.get("completed", 0),
-                    in_progress=mc.get("in_progress", 0),
-                ))
+        for mid in hod_direct_member_ids:
+            mc = counts.get(mid, {})
+            hod_direct_members_list.append(MemberStats(
+                user_id=mid,
+                username=member_info.get(mid) or "",
+                total=mc.get("total", 0),
+                completed=mc.get("completed", 0),
+                in_progress=mc.get("in_progress", 0),
+            ))
 
         return HierarchicalReport(
             date_from=d_from.isoformat(),

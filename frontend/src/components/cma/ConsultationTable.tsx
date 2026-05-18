@@ -23,6 +23,11 @@ interface ConsultationTableProps {
   showActions?: boolean;
   showAssigneeFilter?: boolean;
   itemsPerPage?: number;
+  // Controlled server-side filters (optional — falls back to internal state)
+  statusFilter?: string;
+  onStatusFilterChange?: (v: string) => void;
+  paymentFilter?: string;
+  onPaymentFilterChange?: (v: string) => void;
 }
 
 export default function ConsultationTable({
@@ -36,12 +41,30 @@ export default function ConsultationTable({
   showActions = true,
   showAssigneeFilter = false,
   itemsPerPage = 10,
+  statusFilter: statusFilterProp,
+  onStatusFilterChange,
+  paymentFilter: paymentFilterProp,
+  onPaymentFilterChange,
 }: ConsultationTableProps) {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [paymentFilter, setPaymentFilter] = useState("");
+  const [statusFilterInternal, setStatusFilterInternal] = useState("");
+  const [paymentFilterInternal, setPaymentFilterInternal] = useState("");
   const [assigneeFilter, setAssigneeFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+
+  const statusFilter = statusFilterProp !== undefined ? statusFilterProp : statusFilterInternal;
+  const paymentFilter = paymentFilterProp !== undefined ? paymentFilterProp : paymentFilterInternal;
+
+  const handleStatusChange = (v: string) => {
+    if (onStatusFilterChange) onStatusFilterChange(v);
+    else setStatusFilterInternal(v);
+    setCurrentPage(1);
+  };
+  const handlePaymentChange = (v: string) => {
+    if (onPaymentFilterChange) onPaymentFilterChange(v);
+    else setPaymentFilterInternal(v);
+    setCurrentPage(1);
+  };
 
   const uniqueAssignees = Array.from(
     new Set(consultations.map((c) => c.responsible_username).filter(Boolean))
@@ -104,7 +127,7 @@ export default function ConsultationTable({
         <div className="flex flex-wrap items-center gap-2">
           <select
             value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
+            onChange={(e) => handleStatusChange(e.target.value)}
             className="h-9 rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
           >
             <option value="">All Statuses</option>
@@ -114,7 +137,7 @@ export default function ConsultationTable({
           </select>
           <select
             value={paymentFilter}
-            onChange={(e) => { setPaymentFilter(e.target.value); setCurrentPage(1); }}
+            onChange={(e) => handlePaymentChange(e.target.value)}
             className="h-9 rounded-lg border border-gray-300 bg-transparent px-3 text-sm text-gray-800 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90"
           >
             <option value="">All Payments</option>

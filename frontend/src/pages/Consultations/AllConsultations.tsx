@@ -19,6 +19,8 @@ export default function AllConsultations() {
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [paymentFilter, setPaymentFilter] = useState("");
 
   const [invoiceTarget, setInvoiceTarget] = useState<Consultation | null>(null);
   const [reassignTarget, setReassignTarget] = useState<Consultation | null>(null);
@@ -28,7 +30,10 @@ export default function AllConsultations() {
       setLoading(true);
       setError("");
       try {
-        const data = await consultationAPI.getAllConsultations();
+        const data = await consultationAPI.getAllConsultations({
+          status: statusFilter || undefined,
+          payment_status: paymentFilter || undefined,
+        });
         setConsultations(data);
       } catch (err) {
         setError("Failed to load consultations.");
@@ -38,7 +43,7 @@ export default function AllConsultations() {
       }
     };
     load();
-  }, []);
+  }, [statusFilter, paymentFilter]);
 
   const handleReassigned = (consultationId: string) => {
     setConsultations((prev) => prev.filter((c) => c.consultation_id !== consultationId));
@@ -66,6 +71,10 @@ export default function AllConsultations() {
           onInvoice={canInvoice ? (c) => setInvoiceTarget(c) : undefined}
           showActions
           showAssigneeFilter={isHOD}
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          paymentFilter={paymentFilter}
+          onPaymentFilterChange={setPaymentFilter}
         />
       </div>
 

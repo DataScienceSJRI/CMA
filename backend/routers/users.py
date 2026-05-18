@@ -204,12 +204,12 @@ async def add_faculty_managed_member(
     faculty_id_str = str(faculty_id)
     managed_id_str = str(member_data.managed_member_user_id)
 
-    # Verify faculty exists and has Faculty role
+    # Verify manager exists and has Faculty or HOD role
     faculty_check = await execute_query(
         supabase.table("users")
         .select("user_id, role")
         .eq("user_id", faculty_id_str)
-        .eq("role", "Faculty")
+        .in_("role", ["Faculty", "HOD"])
     )
 
     if not faculty_check.data:
