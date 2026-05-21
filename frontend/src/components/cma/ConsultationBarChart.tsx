@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import Chart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
 
@@ -16,6 +17,21 @@ export default function ConsultationBarChart({
   height = 300,
   color = "#0a766d",
 }: ConsultationBarChartProps) {
+  const [isDark, setIsDark] = useState(() =>
+    document.documentElement.classList.contains("dark")
+  );
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    return () => observer.disconnect();
+  }, []);
+
   const options: ApexOptions = {
     chart: {
       type: "bar",
@@ -54,7 +70,7 @@ export default function ConsultationBarChart({
     },
     colors: [color],
     tooltip: {
-      theme: "dark",
+      theme: isDark ? "dark" : "light",
     },
   };
 
