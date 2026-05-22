@@ -66,7 +66,12 @@ export default function AllConsultations() {
         <ConsultationTable
           consultations={consultations}
           loading={loading}
-          onEdit={(id) => navigate(isHOD ? `/consultation/${id}/view` : `/consultation/${id}/edit`)}
+          onEdit={(id) => {
+            if (isHOD) { navigate(`/consultation/${id}/view`); return; }
+            const c = consultations.find((c) => c.consultation_id === id);
+            const isOwn = c?.responsible_user_id === user?.user_id;
+            navigate(isOwn ? `/consultation/${id}/edit` : `/consultation/${id}/view`);
+          }}
           onReassign={isFaculty ? (c) => setReassignTarget(c) : undefined}
           onInvoice={canInvoice ? (c) => setInvoiceTarget(c) : undefined}
           showActions
