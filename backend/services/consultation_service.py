@@ -4,6 +4,7 @@ from fastapi import HTTPException, status
 
 from models.consultation import ConsultationModel, DEFAULT_PAGE_SIZE
 from schemas import ConsultationCreate, ConsultationUpdate
+from utils.supabase_client import supabase, execute_query
 
 
 class ConsultationService:
@@ -104,8 +105,21 @@ class ConsultationService:
         if user_role == "HOD":
             return True
 
-        # Faculty: tracking grants read-only access, never write
-        if user_role == "Faculty" and not write:
-            return await ConsultationModel.is_tracked_by_user(consultation_id, user_id)
+        # Faculty: managed members' consultations are always accessible (read + write)
+        if user_role == "Faculty":
+            responsible_id = consultation_data.get("responsible_user_id")
+            if responsible_id:
+                mm_check = await execute_query(
+                    supabase.table("members_managed")
+                    .select("managed_id")
+                    .eq("manager_id", user_id)
+                    .eq("managed_member_user_id", str(responsible_id))
+                    .limit(1)
+                )
+                if mm_check.data:
+                    return True
+            # Tracking grants read-only access for other consultations
+            if not write:
+                return await ConsultationModel.is_tracked_by_user(consultation_id, user_id)
 
         return False
