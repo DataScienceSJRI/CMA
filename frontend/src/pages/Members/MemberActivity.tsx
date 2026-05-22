@@ -155,7 +155,8 @@ export default function MemberActivity() {
         <ConsultationTable
           consultations={consultations}
           loading={loading}
-          showActions={canInvoice}
+          showActions
+          onEdit={(id) => navigate(`/consultation/${id}/view`)}
           onInvoice={canInvoice ? (c) => setInvoiceTarget(c) : undefined}
         />
       </div>
