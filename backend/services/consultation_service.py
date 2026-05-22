@@ -105,8 +105,8 @@ class ConsultationService:
         if user_role == "HOD":
             return True
 
-        # Faculty: managed members' consultations are always accessible (read + write)
-        if user_role == "Faculty":
+        # Faculty: read-only access to managed members' consultations
+        if user_role == "Faculty" and not write:
             responsible_id = consultation_data.get("responsible_user_id")
             if responsible_id:
                 mm_check = await execute_query(
@@ -118,8 +118,6 @@ class ConsultationService:
                 )
                 if mm_check.data:
                     return True
-            # Tracking grants read-only access for other consultations
-            if not write:
-                return await ConsultationModel.is_tracked_by_user(consultation_id, user_id)
+            return await ConsultationModel.is_tracked_by_user(consultation_id, user_id)
 
         return False
