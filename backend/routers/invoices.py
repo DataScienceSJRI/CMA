@@ -33,7 +33,7 @@ except FileNotFoundError:
 logger = logging.getLogger(__name__)
 
 from schemas import InvoiceSend, InvoiceResponse
-from routers.auth import is_hod_or_faculty
+from routers.auth import get_current_active_user
 from utils.supabase_client import supabase, execute_query
 from utils.limiter import limiter
 
@@ -366,7 +366,7 @@ def _build_invoice_html(invoice_number: str, data: InvoiceSend) -> str:
 @limiter.limit("30/minute")
 async def get_next_invoice_number(
     request: Request,
-    current_user: Dict = Depends(is_hod_or_faculty)
+    current_user: Dict = Depends(get_current_active_user)
 ):
     """Return the next available invoice number for the current financial year."""
     invoice_number = await _next_invoice_number()
@@ -444,7 +444,7 @@ async def send_invoice(
     request: Request,
     data: InvoiceSend,
     background_tasks: BackgroundTasks,
-    current_user: Dict = Depends(is_hod_or_faculty)
+    current_user: Dict = Depends(get_current_active_user)
 ):
     """
     Create an invoice record and dispatch the email in a background task.

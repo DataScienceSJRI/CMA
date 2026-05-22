@@ -248,7 +248,7 @@ export default function PersonalDashboard() {
           onDelete={handleDelete}
           onUpdate={handleUpdate}
           onReassign={user?.role === "Faculty" ? (c) => setAssignTarget(c) : undefined}
-          onInvoice={canAssign ? (c) => setInvoiceTarget(c) : undefined}
+          onInvoice={(c) => setInvoiceTarget(c)}
         />
       </div>
 
