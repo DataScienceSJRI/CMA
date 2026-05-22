@@ -3,7 +3,8 @@ import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
-import { invoiceAPI } from "../../services/api";
+import { invoiceAPI, userAPI } from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
 import type { Consultation, InvoiceSendData } from "../../types";
 
 interface InvoiceModalProps {
@@ -13,6 +14,7 @@ interface InvoiceModalProps {
 
 export default function InvoiceModal({ consultation, onClose }: InvoiceModalProps) {
   const today = new Date().toISOString().split("T")[0];
+  const { user } = useAuth();
 
   const [form, setForm] = useState<InvoiceSendData>({
     consultation_id: "",
@@ -32,23 +34,41 @@ export default function InvoiceModal({ consultation, onClose }: InvoiceModalProp
 
   useEffect(() => {
     if (!consultation) return;
-    setForm({
+
+    const isHODOrFaculty = user?.role === "HOD" || user?.role === "Faculty";
+
+    const baseForm: InvoiceSendData = {
       consultation_id: consultation.consultation_id,
       invoice_date: today,
       to_name: consultation.g_name ?? "",
-      through_name: consultation.responsible_username ?? "",
+      through_name: isHODOrFaculty ? (user?.username ?? "") : "",
       department: consultation.department ?? "",
       particulars: consultation.reason ?? "",
       amount: 0,
       taken_by: consultation.responsible_username ?? "",
       recipient_email: "shameem@sjri.res.in",
-    });
+    };
+
+    setForm(baseForm);
     setSent(false);
     setError("");
+
     invoiceAPI
       .getNextNumber()
       .then((r) => setInvoiceNumber(r.invoice_number))
       .catch(() => setInvoiceNumber("SJRI/—/—"));
+
+    // For Members, fetch their manager's name to use as through_name
+    if (!isHODOrFaculty) {
+      userAPI
+        .getMyManager()
+        .then((r) => {
+          if (r.manager_username) {
+            setForm((prev) => ({ ...prev, through_name: r.manager_username ?? "" }));
+          }
+        })
+        .catch(() => {});
+    }
   }, [consultation]);
 
   const set = (field: keyof InvoiceSendData, value: string | number) =>

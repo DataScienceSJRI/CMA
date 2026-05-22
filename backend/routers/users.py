@@ -42,6 +42,37 @@ def is_hod_only(current_user: Dict = Depends(get_current_active_user)) -> Dict:
 
 
 # ============================================================================
+# GET CURRENT USER'S MANAGER (any active user)
+# ============================================================================
+
+@router.get("/me/manager")
+@limiter.limit("60/minute")
+async def get_my_manager(
+    request: Request,
+    current_user: Dict = Depends(get_current_active_user)
+):
+    """Return the manager's username for the current user.
+
+    HOD/Faculty have no manager in the members_managed table, so null is returned.
+    """
+    result = await execute_query(
+        supabase.table("members_managed")
+        .select("manager:users!manager_id(username, first_name, last_name, role)")
+        .eq("managed_member_user_id", current_user["user_id"])
+        .limit(1)
+        .maybe_single()
+    )
+    if not result.data:
+        return {"manager_username": None}
+
+    manager_info = result.data.get("manager") or {}
+    first = (manager_info.get("first_name") or "").strip()
+    last = (manager_info.get("last_name") or "").strip()
+    name = f"{first} {last}".strip() or manager_info.get("username")
+    return {"manager_username": name}
+
+
+# ============================================================================
 # GET ALL DEPARTMENTS (HOD only)
 # ============================================================================
 

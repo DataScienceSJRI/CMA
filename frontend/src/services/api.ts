@@ -286,6 +286,11 @@ export const userAPI = {
     return response.data;
   },
 
+  getMyManager: async (): Promise<{ manager_username: string | null }> => {
+    const response = await api.get("/users/me/manager");
+    return response.data;
+  },
+
   getDepartments: async (): Promise<string[]> => {
     const response = await api.get("/users/departments");
     return response.data;
