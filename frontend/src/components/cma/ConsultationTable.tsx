@@ -22,6 +22,7 @@ interface ConsultationTableProps {
   onUpdate?: (id: string, field: "status" | "payment_status", value: string) => void;
   showActions?: boolean;
   showAssigneeFilter?: boolean;
+  showAssignedTo?: boolean;
   itemsPerPage?: number;
   // Controlled server-side filters (optional — falls back to internal state)
   statusFilter?: string;
@@ -40,6 +41,7 @@ export default function ConsultationTable({
   onUpdate,
   showActions = true,
   showAssigneeFilter = false,
+  showAssignedTo = true,
   itemsPerPage = 10,
   statusFilter: statusFilterProp,
   onStatusFilterChange,
@@ -204,12 +206,14 @@ export default function ConsultationTable({
                 >
                   Reason
                 </TableCell>
-                <TableCell
-                  isHeader
-                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
-                >
-                  Assigned To
-                </TableCell>
+                {showAssignedTo && (
+                  <TableCell
+                    isHeader
+                    className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
+                  >
+                    Assigned To
+                  </TableCell>
+                )}
                 <TableCell
                   isHeader
                   className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"
@@ -256,9 +260,11 @@ export default function ConsultationTable({
                   <TableCell className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                     {c.reason}
                   </TableCell>
-                  <TableCell className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                    {c.responsible_username ?? "—"}
-                  </TableCell>
+                  {showAssignedTo && (
+                    <TableCell className="whitespace-nowrap px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                      {c.responsible_username ?? "—"}
+                    </TableCell>
+                  )}
                   <TableCell className="whitespace-nowrap px-6 py-4">
                     {onUpdate ? (
                       <select

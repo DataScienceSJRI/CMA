@@ -249,6 +249,7 @@ export default function PersonalDashboard() {
           onUpdate={handleUpdate}
           onReassign={user?.role === "Faculty" ? (c) => setAssignTarget(c) : undefined}
           onInvoice={(c) => setInvoiceTarget(c)}
+          showAssignedTo={canAssign}
         />
       </div>
 
