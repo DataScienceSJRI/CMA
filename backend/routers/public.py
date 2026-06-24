@@ -84,20 +84,6 @@ async def submit_consultation(request: Request, data: ConsultationPublicCreate):
     - Otherwise, responsible_user_id is left NULL, and the consultation appears
       as "pending" in the HOD dashboard for that department.
     """
-    # Validate that the submitted department actually exists to prevent data pollution.
-    dept_check = await execute_query(
-        supabase.table("users")
-        .select("department")
-        .eq("department", data.department)
-        .eq("is_active", True)
-        .limit(1)
-    )
-    if not dept_check.data:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Unknown department. Please select a valid department from the list.",
-        )
-
     responsible_id = None
 
     if data.requested_user_id:
